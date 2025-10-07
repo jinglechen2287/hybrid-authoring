@@ -1,6 +1,8 @@
 import type { CSSProperties } from "react";
 import { xrStore } from "~/stores";
 
+// TODO: Convert to Tailwind
+
 const buttonStyles: CSSProperties = {
   background: "white",
   border: "none",

@@ -3,13 +3,18 @@ import { useSceneStore } from "~/stores";
 import type { Transformation } from "~/types";
 import type { Vector3Tuple } from "three";
 import debounce from "lodash.debounce";
+import { v4 as uuidv4 } from "uuid";
 
 type ProjectsData = Partial<{
   light_position: Vector3Tuple;
   sphere_transformation: Transformation;
   cube_transformation: Transformation;
   cone_transformation: Transformation;
+  edited_by_client: string;
+  edited_at: string;
 }>;
+
+const clientId = uuidv4();
 
 // Prevent feedback loops: when applying remote data to the store, ignore store->DB sync
 let isApplyingRemoteUpdate = false;
@@ -18,19 +23,18 @@ function applyProjectDataToScene(row: ProjectsData) {
   isApplyingRemoteUpdate = true;
   try {
     useSceneStore.setState((prev) => ({
-        lightPosition: row.light_position ?? prev.lightPosition,
-        sphereTransformation:
-          row.sphere_transformation ?? prev.sphereTransformation,
-        cubeTransformation: row.cube_transformation ?? prev.cubeTransformation,
-        coneTransformation: row.cone_transformation ?? prev.coneTransformation,
-      }));
+      lightPosition: row.light_position ?? prev.lightPosition,
+      sphereTransformation:
+        row.sphere_transformation ?? prev.sphereTransformation,
+      cubeTransformation: row.cube_transformation ?? prev.cubeTransformation,
+      coneTransformation: row.cone_transformation ?? prev.coneTransformation,
+    }));
   } finally {
     // Yield back to event loop so subscribers see the updated state before we flip the flag
     setTimeout(() => {
       isApplyingRemoteUpdate = false;
     }, 0);
   }
-
 }
 
 function pickDbFieldsFromSceneState() {
@@ -60,7 +64,7 @@ export function startSceneSupabaseSync(projectId: number = 1) {
   void supabase
     .from("projects")
     .select(
-      "light_position, sphere_transformation, cube_transformation, cone_transformation"
+      "light_position, sphere_transformation, cube_transformation, cone_transformation",
     )
     .eq("id", projectId)
     .single()
@@ -75,8 +79,6 @@ export function startSceneSupabaseSync(projectId: number = 1) {
       }
     });
 
-//   supabase.removeAllChannels()
-
   const channel = supabase
     .channel(`projects:${projectId}`)
     .on(
@@ -88,10 +90,12 @@ export function startSceneSupabaseSync(projectId: number = 1) {
         filter: `id=eq.${projectId}`,
       },
       (payload) => {
+        if ((payload.new as ProjectsData)?.edited_by_client === clientId)
+          return;
         console.log("[supabase] realtime payload", payload.eventType);
         const row = (payload.new ?? payload.old ?? {}) as ProjectsData;
         applyProjectDataToScene(row);
-      }
+      },
     )
     .on("system", { event: "status_changed" }, (status) => {
       console.log("[supabase] channel status:", status);
@@ -108,6 +112,8 @@ export function startSceneSupabaseSync(projectId: number = 1) {
       sphere_transformation: current.sphereTransformation,
       cube_transformation: current.cubeTransformation,
       cone_transformation: current.coneTransformation,
+      edited_by_client: clientId,
+      edited_at: new Date().toISOString(),
     };
 
     const { error: updateError } = await supabase
