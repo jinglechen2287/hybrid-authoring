@@ -7,9 +7,9 @@ export default function Transform() {
       <Vec3InputContextProvider type="position">
         <Vec3Input />
       </Vec3InputContextProvider>
-      {/* <Vec3InputContextProvider type="rotation">
+      <Vec3InputContextProvider type="rotation">
         <Vec3Input />
-      </Vec3InputContextProvider> */}
+      </Vec3InputContextProvider>
       <Vec3InputContextProvider type="scale">
         <Vec3Input />
       </Vec3InputContextProvider>

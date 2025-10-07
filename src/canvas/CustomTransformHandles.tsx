@@ -35,7 +35,7 @@ export default function CustomTransformHandles({
         return;
       }
       targetRef.current.position.fromArray(position);
-      targetRef.current.quaternion.fromArray(rotation);
+      targetRef.current.rotation.fromArray(rotation);
       targetRef.current.scale.fromArray(scale);
     };
     fn(useSceneStore.getState()[`${target}Transformation`]);
@@ -48,7 +48,7 @@ export default function CustomTransformHandles({
       useSceneStore.setState({
         [`${target}Transformation`]: {
           position: state.current.position.toArray(),
-          rotation: state.current.quaternion.toArray(),
+          rotation: state.current.rotation.toArray(),
           scale: state.current.scale.toArray(),
         },
       });
