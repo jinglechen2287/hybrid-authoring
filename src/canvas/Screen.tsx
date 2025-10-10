@@ -13,7 +13,7 @@ import {
   RenderPass,
   ShaderPass,
 } from "postprocessing";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, type RefObject } from "react";
 import {
   Camera,
   Euler,
@@ -21,6 +21,7 @@ import {
   MathUtils,
   Mesh,
   Object3D,
+  type Object3DEventMap,
   Quaternion,
   Scene as SceneImpl,
   ShaderMaterial,
@@ -150,7 +151,6 @@ export function Screen() {
                 <meshBasicMaterial />
               </mesh>
               <XRLayer
-                pointerEventsType={{ deny: "grab" }}
                 position-y={0.15}
                 customRender={isInXR ? renderFunction : undefined}
                 scale={[(0.3 * 16) / 9, 0.3, 0.3]}
@@ -240,7 +240,11 @@ export function CameraHelper() {
 
   return (
     <HandleTarget ref={ref}>
-      <Hover hoverTargetRef={hoverTargetRef}>
+      <Hover
+        hoverTargetRef={
+          hoverTargetRef as unknown as RefObject<Object3D<Object3DEventMap> | null>
+        }
+      >
         {(hovered) => (
           <>
             <Handle

@@ -22,7 +22,10 @@ export default function SceneContent({
 }: {
   isInScreen?: boolean;
 }) {
-  const lightTarget = useMemo(() => new Object3D(), []);
+  const lightTarget = useMemo(
+    () => new Object3D() as Object3D<Object3DEventMap & PointerEventsMap>,
+    [],
+  );
   const light = useMemo(() => new DirectionalLight(), []);
   light.castShadow = true;
   light.shadow.camera.left = -0.5;
@@ -47,7 +50,9 @@ export default function SceneContent({
 
   const scene = useThree((s) => s.scene);
   useEffect(() => {
-    const voidObject = getVoidObject(scene) as Object3D<
+    const voidObject = getVoidObject(
+      scene as unknown as Object3D<Object3DEventMap & PointerEventsMap>,
+    ) as Object3D<
       Object3DEventMap & PointerEventsMap
     >;
     const deselectHandler = () => {
