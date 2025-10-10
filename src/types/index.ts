@@ -9,3 +9,12 @@ export type Transformation = {
   rotation: Vector3Tuple;
   scale: Vector3Tuple;
 };
+
+export type ProjectsData = Partial<{
+  light_position: Vector3Tuple;
+  sphere_transformation: Transformation;
+  cube_transformation: Transformation;
+  cone_transformation: Transformation;
+  edited_by_client: string;
+  edited_at: string;
+}>;

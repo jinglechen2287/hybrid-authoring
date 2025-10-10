@@ -1,25 +1,16 @@
-import { supabase } from "./supabase";
-import { useSceneStore } from "~/stores";
-import type { Transformation } from "~/types";
-import type { Vector3Tuple } from "three";
 import debounce from "lodash.debounce";
 import { v4 as uuidv4 } from "uuid";
-
-type ProjectsData = Partial<{
-  light_position: Vector3Tuple;
-  sphere_transformation: Transformation;
-  cube_transformation: Transformation;
-  cone_transformation: Transformation;
-  edited_by_client: string;
-  edited_at: string;
-}>;
+import { useSceneStore } from "~/stores";
+import type { ProjectsData } from "~/types";
+import { supabase } from "./supabase";
+import { pickDbFields, stringify } from "./util";
 
 const clientId = uuidv4();
 
 // Prevent feedback loops: when applying remote data to the store, ignore store->DB sync
 let isApplyingRemoteUpdate = false;
 
-function applyProjectDataToScene(row: ProjectsData) {
+function setScene(row: ProjectsData) {
   isApplyingRemoteUpdate = true;
   try {
     useSceneStore.setState((prev) => ({
@@ -37,31 +28,8 @@ function applyProjectDataToScene(row: ProjectsData) {
   }
 }
 
-function pickDbFieldsFromSceneState() {
-  const state = useSceneStore.getState();
-  return {
-    lightPosition: state.lightPosition,
-    sphereTransformation: state.sphereTransformation,
-    cubeTransformation: state.cubeTransformation,
-    coneTransformation: state.coneTransformation,
-  };
-}
-
-function shallowStableStringify(value: unknown) {
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return "";
-  }
-}
-
-export function startSceneSupabaseSync(projectId: number = 1) {
-  console.log("[supabase] starting scene sync for project", projectId);
-
-  // Kick off the initial fetch in the background to avoid delaying
-  // the synchronous return of the unsubscribe function (prevents
-  // React Strict Mode double-effect races).
-  void supabase
+function getProjectData(projectId: number) {
+  supabase
     .from("projects")
     .select(
       "light_position, sphere_transformation, cube_transformation, cone_transformation",
@@ -75,9 +43,18 @@ export function startSceneSupabaseSync(projectId: number = 1) {
       }
       if (data) {
         console.log("[supabase] initial fetch ok, applying scene data");
-        applyProjectDataToScene(data as ProjectsData);
+        setScene(data as ProjectsData);
       }
     });
+}
+
+export function startSceneSync(projectId: number = 1) {
+  console.log("[supabase] starting scene sync for project", projectId);
+
+  // Kick off the initial fetch in the background to avoid delaying
+  // the synchronous return of the unsubscribe function (prevents
+  // React Strict Mode double-effect races).
+  getProjectData(projectId);
 
   const channel = supabase
     .channel(`projects:${projectId}`)
@@ -94,7 +71,7 @@ export function startSceneSupabaseSync(projectId: number = 1) {
           return;
         console.log("[supabase] realtime payload", payload.eventType);
         const row = (payload.new ?? payload.old ?? {}) as ProjectsData;
-        applyProjectDataToScene(row);
+        setScene(row);
       },
     )
     .on("system", { event: "status_changed" }, (status) => {
@@ -103,10 +80,10 @@ export function startSceneSupabaseSync(projectId: number = 1) {
     .subscribe();
 
   // Set up store -> database sync with debouncing and loop prevention
-  let lastSnapshotString = shallowStableStringify(pickDbFieldsFromSceneState());
+  let lastSnapshotString = stringify(pickDbFields());
 
   const postUpdate = async () => {
-    const current = pickDbFieldsFromSceneState();
+    const current = pickDbFields();
     const update: ProjectsData = {
       light_position: current.lightPosition,
       sphere_transformation: current.sphereTransformation,
@@ -125,16 +102,15 @@ export function startSceneSupabaseSync(projectId: number = 1) {
       console.error("[supabase] update error:", updateError);
     } else {
       // Snapshot after successful write
-      lastSnapshotString = shallowStableStringify(current);
-      // console.log("[supabase] scene synced to DB");
+      lastSnapshotString = stringify(current);
     }
   };
 
   const debouncedPostUpdate = debounce(postUpdate, 10, { maxWait: 50 });
 
   const unsubscribeStore = useSceneStore.subscribe(() => {
-    const next = pickDbFieldsFromSceneState();
-    const nextString = shallowStableStringify(next);
+    const next = pickDbFields();
+    const nextString = stringify(next);
 
     if (isApplyingRemoteUpdate) {
       // Keep snapshot aligned but skip posting
@@ -147,11 +123,7 @@ export function startSceneSupabaseSync(projectId: number = 1) {
   });
 
   return () => {
-    try {
-      unsubscribeStore();
-    } catch {
-      // no-op
-    }
     supabase.removeChannel(channel);
+    unsubscribeStore();
   };
 }

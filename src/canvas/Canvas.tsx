@@ -1,12 +1,15 @@
 import { Canvas as R3FCanvas } from "@react-three/fiber";
-import { OrbitHandles, HandleTarget } from "@react-three/handle";
-import { noEvents, PointerEvents, XR, XROrigin } from "@react-three/xr";
+import { OrbitHandles } from "@react-three/handle";
+import {
+  IfInSessionMode,
+  noEvents,
+  PointerEvents,
+  XR,
+  XROrigin,
+} from "@react-three/xr";
+import { BackSide } from "three";
 import { xrStore } from "~/stores";
-import SceneBg from "./SceneBg";
-import Scene from "./Scene";
-import { SceneTransformHandles, SceneRotateAndScaleHandles } from "./SceneHandles";
-// import CameraHelper from "./CameraHelper";
-// import Screen from "./Screen";
+import Scene from "./scene/Scene";
 
 export default function Canvas() {
   return (
@@ -17,17 +20,12 @@ export default function Canvas() {
       style={{ width: "100%", flexGrow: 1 }}
     >
       <XR store={xrStore}>
-        <SceneBg />
+        <CanvasBg />
         <group>
           <PointerEvents />
           <OrbitHandles damping />
           <XROrigin position={[0, -1, 0.5]} />
-          <HandleTarget>
-            <Scene />
-            <SceneTransformHandles />
-            <SceneRotateAndScaleHandles />
-            {/* <CameraHelper /> */}
-          </HandleTarget>
+          <Scene />
           {/* <Screen /> */}
         </group>
       </XR>
@@ -35,3 +33,14 @@ export default function Canvas() {
   );
 }
 
+function CanvasBg() {
+  return (
+    // Hide in immersive AR
+    <IfInSessionMode deny="immersive-ar">
+      <mesh scale={1000}>
+        <meshBasicMaterial side={BackSide} color="black" />
+        <sphereGeometry />
+      </mesh>
+    </IfInSessionMode>
+  );
+}

@@ -1,9 +1,25 @@
-import { Handle } from "@react-three/handle";
 import { RoundedBox } from "@react-three/drei";
-import Hover from "./Hover";
-import { RotateGeometry } from "./customGeometries";
+import { Handle, HandleTarget } from "@react-three/handle";
+import Hover from "../interaction/Hover";
+import { RotateGeometry } from "../customGeometries";
+import SceneContent from "./SceneContent";
 
-export function SceneTransformHandles() {
+export default function Scene({
+  isInScreen = false,
+}: {
+  isInScreen?: boolean;
+}) {
+  return (
+    <HandleTarget>
+      <SceneContent isInScreen={isInScreen} />
+      <SceneTransformHandles />
+      <SceneRotateAndScaleHandles />
+      {/* <CameraHelper /> */}
+    </HandleTarget>
+  );
+}
+
+function SceneTransformHandles() {
   return (
     <Handle
       targetRef="from-context"
@@ -32,7 +48,7 @@ export function SceneTransformHandles() {
   );
 }
 
-export function SceneRotateAndScaleHandles() {
+function SceneRotateAndScaleHandles() {
   return (
     <Handle
       targetRef="from-context"

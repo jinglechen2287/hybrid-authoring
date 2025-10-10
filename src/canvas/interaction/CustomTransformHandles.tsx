@@ -11,8 +11,8 @@ import {
 } from "react";
 import { Group, Object3D } from "three";
 import { useSceneStore } from "~/stores";
-import { createDefaultTransformation, vibrateOnEvent } from "~/util";
-import type { ElementType } from "~/types";
+import type { ElementType, Transformation } from "~/types";
+import { vibrateOnEvent } from "./vibrateOnEvent";
 
 export default function CustomTransformHandles({
   target,
@@ -26,11 +26,7 @@ export default function CustomTransformHandles({
   const isInXR = useXR((s) => s.session != null);
   const targetRef = useRef<Group>(null);
   useEffect(() => {
-    const fn = ({
-      position,
-      rotation,
-      scale,
-    }: ReturnType<typeof createDefaultTransformation>) => {
+    const fn = ({ position, rotation, scale }: Transformation) => {
       if (targetRef.current == null) {
         return;
       }
@@ -40,7 +36,7 @@ export default function CustomTransformHandles({
     };
     fn(useSceneStore.getState()[`${target}Transformation`]);
     return useSceneStore.subscribe((state) =>
-      fn(state[`${target}Transformation`])
+      fn(state[`${target}Transformation`]),
     );
   }, [isInXR, target]);
   const apply = useCallback(
@@ -53,7 +49,7 @@ export default function CustomTransformHandles({
         },
       });
     },
-    [target]
+    [target],
   );
   if (isInXR) {
     return (

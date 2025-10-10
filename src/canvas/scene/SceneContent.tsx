@@ -1,5 +1,8 @@
+import { getVoidObject, type PointerEventsMap } from "@pmndrs/pointer-events";
+import { RoundedBox } from "@react-three/drei";
+import { useThree } from "@react-three/fiber";
+import { Handle, HandleTarget } from "@react-three/handle";
 import { type RefObject, useEffect, useMemo, useRef } from "react";
-
 import {
   DirectionalLight,
   Group,
@@ -8,18 +11,17 @@ import {
   type Object3DEventMap,
   type Vector3Tuple,
 } from "three";
-import { useThree } from "@react-three/fiber";
-import { RoundedBox } from "@react-three/drei";
-import { Handle, HandleTarget } from "@react-three/handle";
-import { getVoidObject, type PointerEventsMap } from "@pmndrs/pointer-events";
-
 import { useSceneStore } from "~/stores";
-import Hover from "./Hover";
-import CustomTransformHandles from "./CustomTransformHandles";
+import CustomTransformHandles from "../interaction/CustomTransformHandles";
+import Hover from "../interaction/Hover";
 import StripedLineToCenter from "./StripeLineToCenter";
-import { SunGeometry } from "./customGeometries";
+import { SunGeometry } from "../customGeometries";
 
-export default function Scene({ isInScreen = false }: { isInScreen?: boolean }) {
+export default function SceneContent({
+  isInScreen = false,
+}: {
+  isInScreen?: boolean;
+}) {
   const lightTarget = useMemo(() => new Object3D(), []);
   const light = useMemo(() => new DirectionalLight(), []);
   light.castShadow = true;
@@ -38,7 +40,9 @@ export default function Scene({ isInScreen = false }: { isInScreen?: boolean }) 
       lightGroupRef.current?.position.set(...state);
     };
     lightPositionChangeHandler(useSceneStore.getState().lightPosition);
-    return useSceneStore.subscribe((s) => lightPositionChangeHandler(s.lightPosition));
+    return useSceneStore.subscribe((s) =>
+      lightPositionChangeHandler(s.lightPosition),
+    );
   }, []);
 
   const scene = useThree((s) => s.scene);

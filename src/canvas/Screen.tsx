@@ -1,7 +1,11 @@
-import { defaultApply, HandleStore } from "@pmndrs/handle";
+import {
+  applyDampedScreenCameraState,
+  defaultApply,
+  HandleStore,
+} from "@pmndrs/handle";
 import { RoundedBox } from "@react-three/drei";
 import { type RootState, useFrame } from "@react-three/fiber";
-import { OrbitHandles, Handle, HandleTarget } from "@react-three/handle";
+import { Handle, HandleTarget, OrbitHandles } from "@react-three/handle";
 import { NotInXR, useSessionFeatureEnabled, XRLayer } from "@react-three/xr";
 import {
   CopyPass,
@@ -12,21 +16,23 @@ import {
 import { useMemo, useRef } from "react";
 import {
   Camera,
-  Group,
   Euler,
+  Group,
+  MathUtils,
+  Mesh,
+  Object3D,
   Quaternion,
-  Vector3,
   Scene as SceneImpl,
   ShaderMaterial,
   Uniform,
+  Vector3,
   WebGLRenderer,
   WebGLRenderTarget,
 } from "three";
-import { MathUtils } from "three";
-import { RotateGeometry } from "./customGeometries";
 import { cameraStore } from "~/stores";
-import Hover from "./Hover";
-import Scene from "./Scene";
+import Hover from "./interaction/Hover";
+import SceneContent from "./scene/Scene";
+import { CameraGeometry, RotateGeometry } from "./customGeometries";
 
 const myShaderMaterial = new ShaderMaterial({
   uniforms: {
@@ -64,7 +70,7 @@ const vectorHelper1 = new Vector3();
 const vectorHelper2 = new Vector3();
 const zAxis = new Vector3(0, 0, 1);
 
-export default function Screen() {
+export function Screen() {
   const ref = useRef<Group>(null);
   const storeRef = useRef<HandleStore<unknown>>(null);
   useFrame((state, dt) => {
@@ -75,14 +81,14 @@ export default function Screen() {
     ref.current.getWorldPosition(vectorHelper2);
     quaternionHelper.setFromUnitVectors(
       zAxis,
-      vectorHelper1.sub(vectorHelper2).normalize()
+      vectorHelper1.sub(vectorHelper2).normalize(),
     );
     eulerHelper.setFromQuaternion(quaternionHelper, "YXZ");
     ref.current.rotation.y = MathUtils.damp(
       ref.current.rotation.y,
       eulerHelper.y,
       10,
-      dt
+      dt,
     );
   });
   const isInXR = useSessionFeatureEnabled("layers");
@@ -99,7 +105,7 @@ export default function Screen() {
     return (
       renderTarget: WebGLRenderTarget,
       state: RootState,
-      delta: number
+      delta: number,
     ) => {
       if (
         cache == null ||
@@ -154,7 +160,7 @@ export default function Screen() {
                 <NotInXR>
                   <color attach="background" args={["white"]} />
                   <OrbitHandles damping store={cameraStore} />
-                  <Scene isInScreen />
+                  <SceneContent isInScreen />
                 </NotInXR>
               </XRLayer>
               <Handle
@@ -214,6 +220,65 @@ export default function Screen() {
           </Handle>
         </group>
       </group>
+    </HandleTarget>
+  );
+}
+
+export function CameraHelper() {
+  const ref = useRef<Object3D>(null);
+  const update = useMemo(
+    () =>
+      applyDampedScreenCameraState(
+        cameraStore,
+        () => ref.current,
+        () => true,
+      ),
+    [],
+  );
+  useFrame((_state, dt) => update(dt * 1000));
+  const hoverTargetRef = useRef<Mesh>(null);
+
+  return (
+    <HandleTarget ref={ref}>
+      <Hover hoverTargetRef={hoverTargetRef}>
+        {(hovered) => (
+          <>
+            <Handle
+              targetRef="from-context"
+              apply={(state) => {
+                const cameraState = cameraStore.getState();
+                cameraState.setCameraPosition(
+                  ...state.current.position.toArray(),
+                );
+              }}
+              scale={false}
+              multitouch={false}
+              rotate={false}
+            >
+              <mesh ref={hoverTargetRef} scale={hovered ? 0.035 : 0.03}>
+                <sphereGeometry />
+                <meshStandardMaterial
+                  emissiveIntensity={hovered ? 0.3 : 0}
+                  emissive={0xffffff}
+                  toneMapped={false}
+                  color="grey"
+                />
+              </mesh>
+            </Handle>
+            <group scale-x={16 / 9} rotation-y={Math.PI}>
+              <mesh position-z={0.1} scale={hovered ? 0.025 : 0.02}>
+                <CameraGeometry />
+                <meshStandardMaterial
+                  emissiveIntensity={hovered ? 0.3 : 0}
+                  emissive={0xffffff}
+                  toneMapped={false}
+                  color="grey"
+                />
+              </mesh>
+            </group>
+          </>
+        )}
+      </Hover>
     </HandleTarget>
   );
 }

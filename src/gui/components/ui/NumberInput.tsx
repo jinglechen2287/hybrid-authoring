@@ -1,5 +1,5 @@
 import { NumberInput as ArkNumberInput } from "@ark-ui/react/number-input";
-import { useVec3Input } from "~/contexts/Vec3InputContext";
+import { useVec3Input } from "~/gui/contexts/Vec3InputContext";
 import { useSceneStore } from "~/stores";
 import type { ValueChangeDetails } from "node_modules/@ark-ui/react/dist/components/number-input/number-input";
 import { produce } from "immer";
@@ -18,16 +18,19 @@ export default function NumberInput({
   const valueChangeHandler = (details: ValueChangeDetails) => {
     useSceneStore.setState(
       produce((draft) => {
-        draft[`${store.selected}Transformation`][type][index] = parseFloat(
-          details.value,
-        );
+        let value = parseFloat(details.value);
+        if (isNaN(value)) value = 0;
+        draft[`${store.selected}Transformation`][type][index] = value;
       }),
     );
   };
 
   return (
     <ArkNumberInput.Root
-      value={value.toFixed(2)}
+      value={value.toString()}
+      formatOptions={{
+        maximumFractionDigits: 2,
+      }}
       step={0.01}
       className="min-w-20"
       onValueChange={valueChangeHandler}

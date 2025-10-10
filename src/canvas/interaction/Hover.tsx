@@ -1,7 +1,7 @@
 import { useHover } from "@react-three/xr";
 import { type ReactNode, type RefObject, useRef, useState } from "react";
 import { Group, Object3D } from "three";
-import { vibrateOnEvent } from "~/util";
+import { vibrateOnEvent } from "./vibrateOnEvent";
 
 export default function Hover({
   children,

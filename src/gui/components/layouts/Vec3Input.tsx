@@ -1,5 +1,5 @@
 import NumberInput from "../ui/NumberInput";
-import { useVec3Input } from "~/contexts/Vec3InputContext";
+import { useVec3Input } from "~/gui/contexts/Vec3InputContext";
 
 export default function Vec3Input() {
   const { type } = useVec3Input();

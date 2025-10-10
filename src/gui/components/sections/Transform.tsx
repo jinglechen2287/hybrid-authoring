@@ -1,5 +1,5 @@
 import Vec3Input from "../layouts/Vec3Input";
-import Vec3InputContextProvider from "~/contexts/Vec3InputContextProvider";
+import Vec3InputContextProvider from "~/gui/contexts/Vec3InputContextProvider";
 
 export default function Transform() {
   return (
