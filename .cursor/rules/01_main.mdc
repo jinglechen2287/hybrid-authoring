@@ -1,0 +1,55 @@
+---
+alwaysApply: true
+---
+# Project Stack and Workflows
+
+- **Build tool**: Vite 7 (ESM, React plugin, Tailwind plugin, basic-ssl)
+- **Language**: TypeScript 5 (strict, bundler moduleResolution)
+- **UI**: React 19, Tailwind CSS 4
+- **3D**: three@0.180, @react-three/fiber, @react-three/drei, @react-three/handle, @react-three/xr
+- **State**: Zustand stores in `src/stores`
+- **Backend**: Supabase client in `src/supabase`
+- **Path alias**: `~/*` -> `src/*` via `tsconfig.app.json` and `vite-tsconfig-paths`
+
+## Scripts
+- **Dev**: `npm run dev` (Vite)
+- **Build**: `npm run build` (tsc -b + vite build)
+- **Preview**: `npm run preview`
+- **Lint**: `npm run lint`
+
+## XR and Canvas Runtime
+- `src/canvas/Canvas.tsx` wraps the app in `<XR store={xrStore}>` and uses `PointerEvents`, `OrbitHandles`, and optionally `Screen`.
+- Background sphere hidden in immersive AR: `<IfInSessionMode deny="immersive-ar">`.
+- `xrStore` comes from `createXRStore` and is re-exported from `~/stores`.
+
+## Scene Composition
+- `src/canvas/scene/Scene.tsx` composes `SceneContent` and transform handles.
+- `src/canvas/scene/SceneContent.tsx` manages directional light, hover/handles, and object pivots; uses `useSceneStore`.
+- `src/canvas/Screen.tsx` adds an `XRLayer` subscene using `EffectComposer` + gamma `ShaderPass`.
+
+## State Flows
+- `src/stores/sceneStore.ts` owns `lightPosition`, per-object `Transformation`, and `selected` element.
+- `src/stores/cameraStore.ts` uses `createScreenCameraStore`.
+- `src/stores/xrStore.ts` uses `createXRStore`.
+- Re-exports in `src/stores/index.ts` for `~/stores` imports.
+
+## Supabase Realtime
+- Client in `src/supabase/supabase.ts` with `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+- `startSceneSync(projectId)` in `src/supabase/subscription.ts`:
+  - Initial fetch hydrates store state.
+  - Realtime channel on `projects` table.
+  - Debounced store→DB updates with loop prevention via `clientId` and snapshots.
+
+## CSS and Styling
+- Tailwind CSS 4 via `@tailwindcss/vite`.
+- Styles in `src/index.css`.
+
+## Conventions
+- Use the `~` alias for `src/*` imports.
+- Keep scene components focused on rendering/interaction; avoid business logic there.
+- Prefer small, composable components/hooks for interactions (e.g., `Hover`, custom handles).
+
+## Environment
+Create `.env.local` with:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`# Project Stack and Workflows

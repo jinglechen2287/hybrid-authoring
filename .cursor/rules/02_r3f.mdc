@@ -1,0 +1,37 @@
+# React Three Fiber and XR Patterns
+
+## Canvas and XR
+- Wrap the app content in `<XR store={xrStore}>` and include `PointerEvents` early in the tree.
+- Use `<IfInSessionMode deny="immersive-ar">` to hide non-AR-friendly backgrounds or helpers.
+- Prefer `OrbitHandles` from `@react-three/handle` for non-XR camera interaction.
+
+## Handle/Transform patterns
+- Use `<HandleTarget>` to scope transform handles to the intended object/group.
+- Prefer `scale={false}` / `rotate={false}` / `multitouch={false}` when only translating.
+- For combined rotate+scale patterns, use `translate="as-rotate-and-scale"` with constrained axes.
+- For screen-synchronous scaling, map x-scale to z to keep aspect: see `Screen` apply callback.
+
+## Hover and interaction
+- Use the `Hover` component to drive visual emphasis (scale/emissive intensity) without side effects.
+- For deselect-on-background-click, attach a click listener to `getVoidObject(scene)` and update store.
+
+## Scene organization
+- Keep `Scene.tsx` as a small composition layer and move logic into `SceneContent.tsx`.
+- Extract custom geometries to `src/canvas/customGeometries` and reuse across handles.
+
+## XRLayer rendering
+- Use an `EffectComposer` with `RenderPass` + `ShaderPass` (gamma) + `CopyPass` to render into the XRLayer.
+- Cache composer per `(scene, camera, renderer, renderTarget)` and dispose on change.
+- Use `useMemo` to create the `customRender` function and pass it to `<XRLayer>` only when layers feature is enabled.
+
+## Math helpers
+- Reuse `Euler`, `Quaternion`, and `Vector3` helpers outside render to avoid allocations.
+- In `useFrame`, guard against null refs and damp rotations with `MathUtils.damp`.
+
+## Performance
+- Keep materials simple and `toneMapped={false}` for UI-like elements.
+- Prefer small meshes for handles; gate expensive effects behind XR-only checks.
+
+## Shadows and lighting
+- Configure `DirectionalLight` shadow camera bounds tightly for the small scene.
+- Keep a separate hover target mesh if the primary light mesh is small.
