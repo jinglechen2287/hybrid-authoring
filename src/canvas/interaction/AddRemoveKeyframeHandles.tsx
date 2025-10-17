@@ -14,6 +14,10 @@ export default function AddRemoveKeyframeHandles({
 }) {
   const addRef = useRef<Mesh>(null);
   const removeRef = useRef<Mesh>(null);
+  const confirmAudioRef = useRef<HTMLAudioElement | null>(null);
+  if (confirmAudioRef.current == null) {
+    confirmAudioRef.current = new Audio("/confirm.wav");
+  }
   const selected = useSceneStore((s) => s.selected);
   const selectedKeyframe = useSceneStore((s) => s.selectedKeyframe);
   const EMPTY: [] = [];
@@ -35,6 +39,15 @@ export default function AddRemoveKeyframeHandles({
         draft.selectedKeyframe = selectedKeyframe + 1;
       }),
     );
+    try {
+      const a = confirmAudioRef.current;
+      if (a) {
+        a.currentTime = 0;
+        void a.play();
+      }
+    } catch {
+      // Ignore audio play errors (e.g., autoplay restrictions)
+    }
   };
 
   const onRemove = () => {
@@ -49,6 +62,15 @@ export default function AddRemoveKeyframeHandles({
         }
       }),
     );
+    try {
+      const a = confirmAudioRef.current;
+      if (a) {
+        a.currentTime = 0;
+        void a.play();
+      }
+    } catch {
+      // Ignore audio play errors (e.g., autoplay restrictions)
+    }
   };
 
   return (
