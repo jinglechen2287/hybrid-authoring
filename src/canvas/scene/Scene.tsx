@@ -1,7 +1,11 @@
 import { RoundedBox } from "@react-three/drei";
 import { Handle, HandleTarget } from "@react-three/handle";
-import Hover from "../interaction/Hover";
+import { useModeStore } from "~/stores";
 import { RotateGeometry } from "../customGeometries";
+import AddRemoveKeyframeHandles from "../interaction/AddRemoveKeyframeHandles";
+import AuthorAnimationToggleHandle from "../interaction/AuthorAnimationToggleHandle";
+import Hover from "../interaction/Hover";
+import ModeToggleHandle from "../interaction/ModeToggleHandle";
 import SceneContent from "./SceneContent";
 
 export default function Scene({
@@ -9,11 +13,15 @@ export default function Scene({
 }: {
   isInScreen?: boolean;
 }) {
+  const isAuthoringAnimation = useModeStore((s) => s.isAuthoringAnimation);
   return (
     <HandleTarget>
       <SceneContent isInScreen={isInScreen} />
       <SceneTransformHandles />
       <SceneRotateAndScaleHandles />
+      <ModeToggleHandle />
+      <AuthorAnimationToggleHandle />
+      {isAuthoringAnimation && <AddRemoveKeyframeHandles />}
       {/* <CameraHelper /> */}
     </HandleTarget>
   );

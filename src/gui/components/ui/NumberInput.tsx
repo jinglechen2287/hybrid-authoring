@@ -1,8 +1,8 @@
 import { NumberInput as ArkNumberInput } from "@ark-ui/react/number-input";
+import { produce } from "immer";
+import type { ValueChangeDetails } from "node_modules/@ark-ui/react/dist/components/number-input/number-input";
 import { useVec3Input } from "~/gui/contexts/Vec3InputContext";
 import { useSceneStore } from "~/stores";
-import type { ValueChangeDetails } from "node_modules/@ark-ui/react/dist/components/number-input/number-input";
-import { produce } from "immer";
 
 export default function NumberInput({
   coordinate,
@@ -10,17 +10,22 @@ export default function NumberInput({
   coordinate: "X" | "Y" | "Z";
 }) {
   const { type } = useVec3Input();
-  const store = useSceneStore();
-  if (!store.selected) return null;
+  const sceneStore = useSceneStore();
+  if (!sceneStore.selected) return null;
   const index = ["X", "Y", "Z"].indexOf(coordinate);
-  const value = store[`${store.selected}Transformation`][type][index];
+  const value =
+    sceneStore[`${sceneStore.selected}Transformation`][
+      sceneStore.selectedKeyframe
+    ][type][index];
 
   const valueChangeHandler = (details: ValueChangeDetails) => {
     useSceneStore.setState(
       produce((draft) => {
         let value = parseFloat(details.value);
         if (isNaN(value)) value = 0;
-        draft[`${store.selected}Transformation`][type][index] = value;
+        draft[`${sceneStore.selected}Transformation`][
+          sceneStore.selectedKeyframe
+        ][type][index] = value;
       }),
     );
   };

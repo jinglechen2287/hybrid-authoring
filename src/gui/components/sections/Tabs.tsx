@@ -1,4 +1,6 @@
 import { Tabs } from "@ark-ui/react/tabs";
+import { useModeStore, useSceneStore } from "~/stores";
+import Animation from "./Animation";
 import Transform from "./Transform";
 
 const tabs = [
@@ -10,7 +12,7 @@ const tabs = [
   {
     value: "animation",
     label: "Animation",
-    content: "Needs implementation",
+    content: <Animation />,
   },
   {
     value: "interaction",
@@ -20,8 +22,24 @@ const tabs = [
 ];
 
 export default function TabsUnderline() {
+  const setIsAuthoringAnimation = useModeStore(
+    (s) => s.setIsAuthoringAnimation,
+  );
   return (
-    <Tabs.Root defaultValue="property" className="flex w-full flex-col">
+    <Tabs.Root
+      defaultValue="property"
+      className="flex w-full flex-col"
+      onValueChange={(details) => {
+        if (details.value === "property") {
+          useSceneStore.setState({ selectedKeyframe: 0 });
+        }
+        if (details.value === "animation") {
+          setIsAuthoringAnimation(true);
+        } else {
+          setIsAuthoringAnimation(false);
+        }
+      }}
+    >
       <Tabs.List className="relative mb-4 flex w-full justify-between border-b border-neutral-200 dark:border-neutral-700">
         {tabs.map((tab) => (
           <Tabs.Trigger

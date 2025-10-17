@@ -4,7 +4,7 @@ import { useVec3Input } from "~/gui/contexts/Vec3InputContext";
 export default function Vec3Input() {
   const { type } = useVec3Input();
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
       <label className="text-md font-medium text-neutral-700 dark:text-neutral-300">
         {type}
       </label>
