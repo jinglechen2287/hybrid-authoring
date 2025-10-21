@@ -191,7 +191,9 @@ const SelectablePivotHandles = forwardRef<
   return (
     <group
       ref={groupRef}
-      onClick={() => useSceneStore.setState({ selected: target })}
+      onClick={() =>
+        useSceneStore.setState({ selected: target, selectedKeyframe: 0 })
+      }
     >
       <PivotHandles
         size={size}
