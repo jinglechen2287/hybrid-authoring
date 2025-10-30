@@ -1,5 +1,5 @@
 import { Tabs } from "@ark-ui/react/tabs";
-import { useModeStore, useSceneStore } from "~/stores";
+import { useEditorStore, useSceneStore } from "~/stores";
 import Animation from "./Animation";
 import Transform from "./Transform";
 
@@ -22,7 +22,7 @@ const tabs = [
 ];
 
 export default function TabsUnderline() {
-  const setIsAuthoringAnimation = useModeStore(
+  const setIsAuthoringAnimation = useEditorStore(
     (s) => s.setIsAuthoringAnimation,
   );
   return (

@@ -15,7 +15,7 @@ export default function Canvas() {
   return (
     <R3FCanvas
       shadows="soft"
-      camera={{ position: [-0.5, 0.5, 0.5] }}
+      camera={{ position: [1, 0.5, 0] }}
       events={noEvents}
       style={{ width: "100%", flexGrow: 1 }}
     >
@@ -24,7 +24,7 @@ export default function Canvas() {
         <group>
           <PointerEvents />
           <OrbitHandles damping />
-          <XROrigin position={[0, -1, 0.5]} />
+          <XROrigin position={[0.5, -1.5, 0]} rotation={[0, Math.PI / 2, 0]} />
           <Scene />
           {/* <Screen /> */}
         </group>

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import Canvas from "~/canvas/Canvas";
 import GUI from "~/gui/GUI";
-import { useModeStore, xrStore } from "~/stores";
+import { useEditorStore, xrStore } from "~/stores";
 import { startSceneSync } from "~/supabase/subscription";
 import "./index.css";
 
@@ -36,8 +36,8 @@ function EnterXRButtons() {
 }
 
 function ModeToggleButton() {
-  const mode = useModeStore((s) => s.mode);
-  const toggleMode = useModeStore((s) => s.toggleMode);
+  const mode = useEditorStore((s) => s.mode);
+  const toggleMode = useEditorStore((s) => s.toggleMode);
 
   return (
     <div className="absolute top-4 right-4 z-50">

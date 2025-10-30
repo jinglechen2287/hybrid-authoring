@@ -1,7 +1,5 @@
 import { type Vector3Tuple } from "three";
 
-export type Mode = "edit" | "play";
-
 export type ElementType = "sphere" | "cube" | "cone";
 
 export type TransformKey =

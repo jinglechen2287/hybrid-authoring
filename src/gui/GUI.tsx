@@ -1,9 +1,9 @@
 import Tabs from "~/gui/components/sections/Tabs";
-import { useModeStore, useSceneStore } from "~/stores";
+import { useEditorStore, useSceneStore } from "~/stores";
 
 export default function GUI() {
   const selected = useSceneStore((state) => state.selected);
-  const mode = useModeStore((state) => state.mode);
+  const mode = useEditorStore((state) => state.mode);
   return (
     <section className="h-full w-1/3 min-w-96 bg-neutral-900 p-4">
       {selected && mode === "edit" && <Tabs />}

@@ -48,6 +48,7 @@ alwaysApply: true
 - Use the `~` alias for `src/*` imports.
 - Keep scene components focused on rendering/interaction; avoid business logic there.
 - Prefer small, composable components/hooks for interactions (e.g., `Hover`, custom handles).
+- Variable names should be descriptive. Avoid abbreviations.
 
 ## Environment
 Create `.env.local` with:

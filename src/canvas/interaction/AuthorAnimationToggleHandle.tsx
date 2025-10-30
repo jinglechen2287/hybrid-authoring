@@ -1,7 +1,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useRef, type RefObject } from "react";
 import { Mesh, Object3D } from "three";
-import { useModeStore } from "~/stores";
+import { useEditorStore } from "~/stores";
 import Hover from "./Hover";
 import { useSceneStore } from "~/stores";
 
@@ -13,8 +13,8 @@ export default function AuthorAnimationToggleHandle({
   scale?: number;
 }) {
   const meshRef = useRef<Mesh>(null);
-  const isAuthoringAnimation = useModeStore((s) => s.isAuthoringAnimation);
-  const setIsAuthoringAnimation = useModeStore(
+  const isAuthoringAnimation = useEditorStore((s) => s.isAuthoringAnimation);
+  const setIsAuthoringAnimation = useEditorStore(
     (s) => s.setIsAuthoringAnimation,
   );
 

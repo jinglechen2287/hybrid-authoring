@@ -1,6 +1,6 @@
 import { RoundedBox } from "@react-three/drei";
 import { Handle, HandleTarget } from "@react-three/handle";
-import { useModeStore } from "~/stores";
+import { useEditorStore } from "~/stores";
 import { RotateGeometry } from "../customGeometries";
 import AddRemoveKeyframeHandles from "../interaction/AddRemoveKeyframeHandles";
 import AuthorAnimationToggleHandle from "../interaction/AuthorAnimationToggleHandle";
@@ -13,7 +13,7 @@ export default function Scene({
 }: {
   isInScreen?: boolean;
 }) {
-  const isAuthoringAnimation = useModeStore((s) => s.isAuthoringAnimation);
+  const isAuthoringAnimation = useEditorStore((s) => s.isAuthoringAnimation);
   return (
     <HandleTarget>
       <SceneContent isInScreen={isInScreen} />

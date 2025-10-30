@@ -1,14 +1,15 @@
 import { create } from "zustand";
-import type { Mode } from "~/types";
 
-type ModeStore = {
-  mode: Mode;
+type EditorMode = "edit" | "play";
+
+type EditorStore = {
+  mode: EditorMode;
   toggleMode: () => void;
   isAuthoringAnimation: boolean;
   setIsAuthoringAnimation: (value: boolean) => void;
 };
 
-export const useModeStore = create<ModeStore>((set) => ({
+export const useEditorStore = create<EditorStore>((set) => ({
   mode: "edit",
   toggleMode: () =>
     set((state) => {

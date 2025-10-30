@@ -12,7 +12,7 @@ import {
   useRef,
 } from "react";
 import { Group, Object3D, type Vector3Tuple } from "three";
-import { useModeStore, useSceneStore } from "~/stores";
+import { useEditorStore, useSceneStore } from "~/stores";
 import type { ElementType, Transformation } from "~/types";
 import { vibrateOnEvent } from "./vibrateOnEvent";
 
@@ -26,7 +26,7 @@ export default function CustomTransformHandles({
   children?: ReactNode;
 }) {
   const isInXR = useXR((s) => s.session != null);
-  const mode = useModeStore((s) => s.mode);
+  const mode = useEditorStore((s) => s.mode);
   const targetRef = useRef<Group>(null);
 
   const animationStartRef = useRef<number | null>(null);

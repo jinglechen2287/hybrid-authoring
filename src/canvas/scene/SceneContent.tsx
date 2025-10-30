@@ -12,7 +12,7 @@ import {
   type Object3DEventMap,
   type Vector3Tuple,
 } from "three";
-import { useModeStore, useSceneStore } from "~/stores";
+import { useEditorStore, useSceneStore } from "~/stores";
 import type { TransformKey } from "~/types";
 import { SunGeometry } from "../customGeometries";
 import CustomTransformHandles from "../interaction/CustomTransformHandles";
@@ -52,7 +52,7 @@ export default function SceneContent({
   }, []);
 
   const scene = useThree((s) => s.scene);
-  const setIsAuthoringAnimation = useModeStore(
+  const setIsAuthoringAnimation = useEditorStore(
     (s) => s.setIsAuthoringAnimation,
   );
   useEffect(() => {
@@ -70,7 +70,7 @@ export default function SceneContent({
   const sunHoverTargetRef = useRef<Mesh>(null);
 
   const pivotSize = isInScreen ? 2 : 1;
-  const isAuthoringAnimation = useModeStore((s) => s.isAuthoringAnimation);
+  const isAuthoringAnimation = useEditorStore((s) => s.isAuthoringAnimation);
   const selected = useSceneStore((s) => s.selected);
   const selectedKeyframe = useSceneStore((s) => s.selectedKeyframe);
 
