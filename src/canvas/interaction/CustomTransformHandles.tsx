@@ -13,16 +13,16 @@ import {
 } from "react";
 import { Group, Object3D, type Vector3Tuple } from "three";
 import { useEditorStore, useSceneStore } from "~/stores";
-import type { ElementType, Transformation } from "~/types";
+import type { SceneData, Transformation } from "~/types";
 import { vibrateOnEvent } from "./vibrateOnEvent";
 
 export default function CustomTransformHandles({
-  target,
+  objectId,
   children,
   size,
 }: {
   size?: number;
-  target: ElementType;
+  objectId: string;
   children?: ReactNode;
 }) {
   const isInXR = useXR((s) => s.session != null);
@@ -30,9 +30,9 @@ export default function CustomTransformHandles({
   const targetRef = useRef<Group>(null);
 
   const animationStartRef = useRef<number | null>(null);
-  const lastKeyframeCountRef = useRef<number>(0);
+  const lastObjStateCountRef = useRef<number>(0);
   useEffect(() => {
-    const fn = ({ position, rotation, scale }: Transformation) => {
+    const updateTarget = ({ position, rotation, scale }: Transformation) => {
       if (targetRef.current == null) {
         return;
       }
@@ -40,60 +40,67 @@ export default function CustomTransformHandles({
       targetRef.current.rotation.fromArray(rotation);
       targetRef.current.scale.fromArray(scale);
     };
-    const initial = useSceneStore.getState();
-    const initialIndex =
-      initial.selected === target ? initial.selectedKeyframe : 0;
-    const initialArr = initial[`${target}Transformation`];
-    if (Array.isArray(initialArr) && initialArr[initialIndex]) {
-      fn(initialArr[initialIndex]);
-    }
-    return useSceneStore.subscribe((state) => {
-      const index = state.selected === target ? state.selectedKeyframe : 0;
-      const arr = state[`${target}Transformation`];
-      const kf = Array.isArray(arr) ? arr[index] : undefined;
-      if (kf) fn(kf);
-    });
-  }, [isInXR, target, mode]);
+    const refresh = () => {
+      const { selectedObjId, objStateIdxMap } = useEditorStore.getState();
+      const sceneState = useSceneStore.getState();
+      const objStates = sceneState.content[objectId]?.states ?? [];
+      const objStateIdx =
+        selectedObjId === objectId ? (objStateIdxMap[objectId] ?? 0) : 0;
+      const objState = Array.isArray(objStates) ? objStates[objStateIdx] : undefined;
+      if (objState) updateTarget(objState);
+    };
+    refresh();
+    const unsubScene = useSceneStore.subscribe(() => refresh());
+    const unsubEditor = useEditorStore.subscribe(() => refresh());
+    return () => {
+      unsubScene();
+      unsubEditor();
+    };
+  }, [isInXR, objectId, mode]);
 
-  // Play-mode keyframe interpolation (500ms per segment), loops across keyframes
+  // Play-mode objStates interpolation (500ms per segment), loops across objStates
   useFrame(() => {
     if (mode !== "play" || targetRef.current == null) {
       animationStartRef.current = null;
       return;
     }
     const state = useSceneStore.getState();
-    const keyframes = state[`${target}Transformation`];
-    if (!Array.isArray(keyframes) || keyframes.length === 0) {
+    const objStates = state.content[objectId]?.states ?? [];
+    if (!Array.isArray(objStates) || objStates.length === 0) {
       animationStartRef.current = null;
       return;
     }
-    if (keyframes.length === 1) {
-      const kf = keyframes[0];
-      targetRef.current.position.fromArray(kf.position);
-      targetRef.current.rotation.fromArray(kf.rotation);
-      targetRef.current.scale.fromArray(kf.scale);
+    if (objStates.length === 1) {
+      const objState = objStates[0];
+      targetRef.current.position.fromArray(objState.position);
+      targetRef.current.rotation.fromArray(objState.rotation);
+      targetRef.current.scale.fromArray(objState.scale);
       animationStartRef.current = null;
-      lastKeyframeCountRef.current = 1;
+      lastObjStateCountRef.current = 1;
       return;
     }
-    if (!state.selected || state.selected === target) {
-      // reset animation start if keyframe count changed
-      if (lastKeyframeCountRef.current !== keyframes.length) {
+    const { selectedObjId } = useEditorStore.getState();
+    if (!selectedObjId || selectedObjId === objectId) {
+      // reset animation start if objState count changed
+      if (lastObjStateCountRef.current !== objStates.length) {
         animationStartRef.current = null;
-        lastKeyframeCountRef.current = keyframes.length;
+        lastObjStateCountRef.current = objStates.length;
       }
       const now = performance.now();
       if (animationStartRef.current == null) {
         animationStartRef.current = now;
       }
-      const segmentDurationMs = 1000;
-      const totalSegments = keyframes.length - 1;
-      const totalDurationMs = totalSegments * segmentDurationMs;
+      const objStateSegmentDurationMs = 1000;
+      const totalSegments = objStates.length - 1;
+      const totalDurationMs = totalSegments * objStateSegmentDurationMs;
       const elapsedMs = (now - animationStartRef.current) % totalDurationMs;
-      const segmentIndex = Math.floor(elapsedMs / segmentDurationMs);
-      const progress = (elapsedMs % segmentDurationMs) / segmentDurationMs;
-      const prevKeyFrame = keyframes[segmentIndex];
-      const nextKeyFrame = keyframes[segmentIndex + 1];
+      const objStateSegmentIdx = Math.floor(
+        elapsedMs / objStateSegmentDurationMs,
+      );
+      const progress =
+        (elapsedMs % objStateSegmentDurationMs) / objStateSegmentDurationMs;
+      const prevObjState = objStates[objStateSegmentIdx];
+      const nextObjState = objStates[objStateSegmentIdx + 1];
       const lerp = (x: number, y: number, progress: number) =>
         x + (y - x) * progress;
       const lerpVec3 = (
@@ -106,16 +113,16 @@ export default function CustomTransformHandles({
         lerp(prevValue[2], nextValue[2], progress),
       ];
       const pos = lerpVec3(
-        prevKeyFrame.position,
-        nextKeyFrame.position,
+        prevObjState.position,
+        nextObjState.position,
         progress,
       );
       const rot = lerpVec3(
-        prevKeyFrame.rotation,
-        nextKeyFrame.rotation,
+        prevObjState.rotation,
+        nextObjState.rotation,
         progress,
       );
-      const scale = lerpVec3(prevKeyFrame.scale, nextKeyFrame.scale, progress);
+      const scale = lerpVec3(prevObjState.scale, nextObjState.scale, progress);
       targetRef.current.position.fromArray(pos);
       targetRef.current.rotation.fromArray(rot);
       targetRef.current.scale.fromArray(scale);
@@ -125,19 +132,23 @@ export default function CustomTransformHandles({
   const apply = useCallback(
     (state: HandleState<unknown>) => {
       useSceneStore.setState(
-        produce((draft) => {
-          const s = useSceneStore.getState();
-          draft[`${target}Transformation`][
-            s.selected === target ? s.selectedKeyframe : 0
-          ] = {
+        produce((sceneData: SceneData) => {
+          const s = useEditorStore.getState();
+          const objStates = sceneData.content[objectId]?.states;
+          if (!objStates || objStates.length === 0) return;
+          const objectStateIdx =
+            s.selectedObjId === objectId
+              ? (s.objStateIdxMap[objectId] ?? 0)
+              : 0;
+          objStates[objectStateIdx] = {
             position: state.current.position.toArray(),
-            rotation: state.current.rotation.toArray(),
+            rotation: state.current.rotation.toArray() as Vector3Tuple,
             scale: state.current.scale.toArray(),
           };
         }),
       );
     },
-    [target],
+    [objectId],
   );
   // In play mode, do not render any interactive handles or selection
   if (mode === "play") {
@@ -149,9 +160,7 @@ export default function CustomTransformHandles({
     return (
       <HandleTarget ref={targetRef as RefObject<Object3D | null>}>
         <group
-          onClick={() =>
-            useSceneStore.setState({ selected: target, selectedKeyframe: 0 })
-          }
+          onClick={() => useEditorStore.getState().setSelectedObjId(objectId)}
         >
           <Handle targetRef="from-context" apply={apply}>
             {children}
@@ -163,7 +172,7 @@ export default function CustomTransformHandles({
   return (
     <SelectablePivotHandles
       size={size}
-      target={target}
+      objectId={objectId}
       apply={apply}
       ref={targetRef}
     >
@@ -176,12 +185,14 @@ const SelectablePivotHandles = forwardRef<
   Group,
   {
     size?: number;
-    target: ElementType;
+    objectId: string;
     apply?: (state: HandleState<unknown>, target: Object3D) => unknown;
     children?: ReactNode;
   }
->(({ children, size, apply, target }, ref) => {
-  const isSelected = useSceneStore((state) => state.selected === target);
+>(({ children, size, apply, objectId }, ref) => {
+  const isSelected = useEditorStore(
+    (state) => state.selectedObjId === objectId,
+  );
   const groupRef = useRef<Group>(null);
   useHover(groupRef as RefObject<Object3D | null>, (hover, e) => {
     if (hover) {
@@ -191,9 +202,7 @@ const SelectablePivotHandles = forwardRef<
   return (
     <group
       ref={groupRef}
-      onClick={() =>
-        useSceneStore.setState({ selected: target, selectedKeyframe: 0 })
-      }
+      onClick={() => useEditorStore.getState().setSelectedObjId(objectId)}
     >
       <PivotHandles
         size={size}

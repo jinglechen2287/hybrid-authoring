@@ -3,7 +3,6 @@ import { useRef, type RefObject } from "react";
 import { Mesh, Object3D } from "three";
 import { useEditorStore } from "~/stores";
 import Hover from "./Hover";
-import { useSceneStore } from "~/stores";
 
 export default function AuthorAnimationToggleHandle({
   position = [0.35, -0.05, -0.24] as [number, number, number],
@@ -28,7 +27,7 @@ export default function AuthorAnimationToggleHandle({
       position={position}
       onClick={() => {
         setIsAuthoringAnimation(!isAuthoringAnimation);
-        useSceneStore.setState({ selectedKeyframe: 0 });
+        useEditorStore.getState().setObjStateIdxMap(0);
       }}
     >
       <Hover hoverTargetRef={meshRef as RefObject<Object3D | null>}>

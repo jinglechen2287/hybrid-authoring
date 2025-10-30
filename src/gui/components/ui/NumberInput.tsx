@@ -2,7 +2,8 @@ import { NumberInput as ArkNumberInput } from "@ark-ui/react/number-input";
 import { produce } from "immer";
 import type { ValueChangeDetails } from "node_modules/@ark-ui/react/dist/components/number-input/number-input";
 import { useVec3Input } from "~/gui/contexts/Vec3InputContext";
-import { useSceneStore } from "~/stores";
+import { useEditorStore, useSceneStore } from "~/stores";
+import type { SceneData } from "~/types";
 
 export default function NumberInput({
   coordinate,
@@ -11,21 +12,30 @@ export default function NumberInput({
 }) {
   const { type } = useVec3Input();
   const sceneStore = useSceneStore();
-  if (!sceneStore.selected) return null;
+  const editorStore = useEditorStore();
+  const selectedObjId = editorStore.selectedObjId;
+  const objStateIdxMap = editorStore.objStateIdxMap;
+  if (!selectedObjId) return null;
   const index = ["X", "Y", "Z"].indexOf(coordinate);
-  const value =
-    sceneStore[`${sceneStore.selected}Transformation`][
-      sceneStore.selectedKeyframe
-    ][type][index];
+  const obj = sceneStore.content[selectedObjId];
+  if (!obj) return null;
+  const objStates = obj.states ?? [];
+  const objStateIdx = objStateIdxMap[selectedObjId] ?? 0;
+  const objState = objStates[objStateIdx] ?? objStates[0];
+  if (!objState) return null;
+  const value = objState[type][index];
 
   const valueChangeHandler = (details: ValueChangeDetails) => {
     useSceneStore.setState(
-      produce((draft) => {
+      produce((sceneData: SceneData) => {
         let value = parseFloat(details.value);
         if (isNaN(value)) value = 0;
-        draft[`${sceneStore.selected}Transformation`][
-          sceneStore.selectedKeyframe
-        ][type][index] = value;
+        const target = sceneData.content[selectedObjId];
+        if (!target) return;
+        const objStates = target.states;
+        if (!objStates || objStates.length === 0) return;
+        const idx = Math.min(objStateIdx, objStates.length - 1);
+        objStates[idx][type][index] = value;
       }),
     );
   };

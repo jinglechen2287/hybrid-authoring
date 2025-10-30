@@ -1,7 +1,7 @@
 import debounce from "lodash.debounce";
 import { v4 as uuidv4 } from "uuid";
 import { useSceneStore } from "~/stores";
-import type { ProjectsData } from "~/types";
+import type { ProjectsData, SceneData } from "~/types";
 import { supabase } from "./supabase";
 import { pickDbFields, stringify } from "./util";
 
@@ -13,13 +13,22 @@ let isApplyingRemoteUpdate = false;
 function setScene(row: ProjectsData) {
   isApplyingRemoteUpdate = true;
   try {
-    useSceneStore.setState((prev) => ({
-      lightPosition: row.light_position ?? prev.lightPosition,
-      sphereTransformation:
-        row.sphere_transformation ?? prev.sphereTransformation,
-      cubeTransformation: row.cube_transformation ?? prev.cubeTransformation,
-      coneTransformation: row.cone_transformation ?? prev.coneTransformation,
-    }));
+    const incoming = row.scene;
+    let scene: SceneData | undefined;
+    if (
+      incoming &&
+      typeof incoming === "object" &&
+      Object.prototype.hasOwnProperty.call(incoming as object, "content")
+    ) {
+      scene = incoming as SceneData;
+    } 
+    if (scene) {
+      useSceneStore.setState((prev) => ({
+        lightPosition: scene?.lightPosition ?? prev.lightPosition,
+        content: scene?.content ?? prev.content,
+      }));
+      console.log(scene)
+    }
   } finally {
     // Yield back to event loop so subscribers see the updated state before we flip the flag
     setTimeout(() => {
@@ -31,9 +40,7 @@ function setScene(row: ProjectsData) {
 function getProjectData(projectId: number) {
   supabase
     .from("projects")
-    .select(
-      "light_position, sphere_transformation, cube_transformation, cone_transformation",
-    )
+    .select("scene")
     .eq("id", projectId)
     .single()
     .then(({ data, error }) => {
@@ -84,11 +91,12 @@ export function startSceneSync(projectId: number = 1) {
 
   const postUpdate = async () => {
     const current = pickDbFields();
-    const update: ProjectsData = {
-      light_position: current.lightPosition,
-      sphere_transformation: current.sphereTransformation,
-      cube_transformation: current.cubeTransformation,
-      cone_transformation: current.coneTransformation,
+    const scene: SceneData = {
+      lightPosition: current.lightPosition,
+      content: current.content,
+    };
+    const update = {
+      scene,
       edited_by_client: clientId,
       edited_at: new Date().toISOString(),
     };

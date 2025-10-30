@@ -1,5 +1,5 @@
 import { Tabs } from "@ark-ui/react/tabs";
-import { useEditorStore, useSceneStore } from "~/stores";
+import { useEditorStore } from "~/stores";
 import Animation from "./Animation";
 import Transform from "./Transform";
 
@@ -31,7 +31,7 @@ export default function TabsUnderline() {
       className="flex w-full flex-col"
       onValueChange={(details) => {
         if (details.value === "property") {
-          useSceneStore.setState({ selectedKeyframe: 0 });
+          useEditorStore.getState().setObjStateIdxMap(0);
         }
         if (details.value === "animation") {
           setIsAuthoringAnimation(true);

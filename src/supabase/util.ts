@@ -4,9 +4,7 @@ export function pickDbFields() {
   const state = useSceneStore.getState();
   return {
     lightPosition: state.lightPosition,
-    sphereTransformation: state.sphereTransformation,
-    cubeTransformation: state.cubeTransformation,
-    coneTransformation: state.coneTransformation,
+    content: state.content,
   };
 }
 

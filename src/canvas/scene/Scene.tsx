@@ -2,7 +2,7 @@ import { RoundedBox } from "@react-three/drei";
 import { Handle, HandleTarget } from "@react-three/handle";
 import { useEditorStore } from "~/stores";
 import { RotateGeometry } from "../customGeometries";
-import AddRemoveKeyframeHandles from "../interaction/AddRemoveKeyframeHandles";
+import AddRemoveStateHandles from "../interaction/AddRemoveStateHandles";
 import AuthorAnimationToggleHandle from "../interaction/AuthorAnimationToggleHandle";
 import Hover from "../interaction/Hover";
 import ModeToggleHandle from "../interaction/ModeToggleHandle";
@@ -21,7 +21,7 @@ export default function Scene({
       <SceneRotateAndScaleHandles />
       <ModeToggleHandle />
       <AuthorAnimationToggleHandle />
-      {isAuthoringAnimation && <AddRemoveKeyframeHandles />}
+      {isAuthoringAnimation && <AddRemoveStateHandles />}
       {/* <CameraHelper /> */}
     </HandleTarget>
   );

@@ -1,11 +1,11 @@
 import { produce } from "immer";
 import { useRef, type RefObject } from "react";
 import { Mesh, Object3D } from "three";
-import { useSceneStore } from "~/stores";
-import type { SceneStore } from "~/types";
+import { useEditorStore, useSceneStore } from "~/stores";
+import type { SceneData } from "~/types";
 import Hover from "./Hover";
 
-export default function AddRemoveKeyframeHandles({
+export default function AddRemoveStateHandles({
   position = [0.35, 0.08, -0.24] as [number, number, number],
   scale = 1.2,
 }: {
@@ -18,27 +18,30 @@ export default function AddRemoveKeyframeHandles({
   if (confirmAudioRef.current == null) {
     confirmAudioRef.current = new Audio("/confirm.wav");
   }
-  const selected = useSceneStore((s) => s.selected);
-  const selectedKeyframe = useSceneStore((s) => s.selectedKeyframe);
+  const selectedObjId = useEditorStore((s) => s.selectedObjId);
+  const objStateIdxMap = useEditorStore((s) => s.objStateIdxMap);
+  const setObjStateIdxMap = useEditorStore((s) => s.setObjStateIdxMap);
   const EMPTY: [] = [];
-  const keyframes = useSceneStore((s) =>
-    selected ? (s as SceneStore)[`${selected}Transformation`] : EMPTY,
+  const states = useSceneStore((s) =>
+    selectedObjId ? s.content[selectedObjId]?.states ?? EMPTY : EMPTY,
   );
+  const selectedObjStateIdx = selectedObjId ? objStateIdxMap[selectedObjId] ?? 0 : 0;
 
   const onAdd = () => {
-    if (!selected) return;
+    if (!selectedObjId) return;
     useSceneStore.setState(
-      produce((draft: SceneStore) => {
-        const arr = draft[`${selected}Transformation`];
-        const base = arr[selectedKeyframe] ?? arr[arr.length - 1];
-        arr.splice(selectedKeyframe + 1, 0, {
+      produce((sceneData: SceneData) => {
+        const objStates = sceneData.content[selectedObjId]?.states;
+        if (!objStates || objStates.length === 0) return;
+        const base = objStates[selectedObjStateIdx] ?? objStates[objStates.length - 1];
+        objStates.splice(selectedObjStateIdx + 1, 0, {
           position: [...base.position],
           rotation: [...base.rotation],
           scale: [...base.scale],
         });
-        draft.selectedKeyframe = selectedKeyframe + 1;
       }),
     );
+    setObjStateIdxMap(selectedObjStateIdx + 1);
     try {
       const a = confirmAudioRef.current;
       if (a) {
@@ -51,17 +54,19 @@ export default function AddRemoveKeyframeHandles({
   };
 
   const onRemove = () => {
-    if (!selected) return;
+    if (!selectedObjId) return;
+    let nextObjStateIdx = selectedObjStateIdx;
     useSceneStore.setState(
-      produce((draft: SceneStore) => {
-        const arr = draft[`${selected}Transformation`];
-        if (arr.length <= 1) return;
-        arr.splice(selectedKeyframe, 1);
-        if (draft.selectedKeyframe >= arr.length) {
-          draft.selectedKeyframe = arr.length - 1;
+      produce((sceneData: SceneData) => {
+        const objStates = sceneData.content[selectedObjId]?.states;
+        if (!objStates || objStates.length <= 1) return;
+        objStates.splice(selectedObjStateIdx, 1);
+        if (nextObjStateIdx >= objStates.length) {
+          nextObjStateIdx = objStates.length - 1;
         }
       }),
     );
+    setObjStateIdxMap(nextObjStateIdx);
     try {
       const a = confirmAudioRef.current;
       if (a) {
@@ -118,7 +123,7 @@ export default function AddRemoveKeyframeHandles({
                 emissiveIntensity={hovered ? 0.3 : 0}
                 emissive={0xffffff}
                 toneMapped={false}
-                color={keyframes.length <= 1 ? "gray" : "maroon"}
+                color={states.length <= 1 ? "gray" : "maroon"}
               />
             </mesh>
           </group>

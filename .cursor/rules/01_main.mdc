@@ -28,7 +28,7 @@ alwaysApply: true
 - `src/canvas/Screen.tsx` adds an `XRLayer` subscene using `EffectComposer` + gamma `ShaderPass`.
 
 ## State Flows
-- `src/stores/sceneStore.ts` owns `lightPosition`, per-object `Transformation`, and `selected` element.
+- `src/stores/sceneStore.ts` owns `lightPosition`, per-object `Transformations`, and `selected` element.
 - `src/stores/cameraStore.ts` uses `createScreenCameraStore`.
 - `src/stores/xrStore.ts` uses `createXRStore`.
 - Re-exports in `src/stores/index.ts` for `~/stores` imports.

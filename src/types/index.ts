@@ -2,11 +2,6 @@ import { type Vector3Tuple } from "three";
 
 export type ElementType = "sphere" | "cube" | "cone";
 
-export type TransformKey =
-  | "sphereTransformation"
-  | "cubeTransformation"
-  | "coneTransformation";
-
 export type Vec3InputType = "position" | "rotation" | "scale";
 
 export type Transformation = {
@@ -15,20 +10,20 @@ export type Transformation = {
   scale: Vector3Tuple;
 };
 
-export type SceneStore = {
+export type SceneObject = {
+    type: ElementType;
+    states: Transformation[];
+}
+
+export type SceneData = {
   lightPosition: Vector3Tuple;
-  sphereTransformation: Transformation[];
-  cubeTransformation: Transformation[];
-  coneTransformation: Transformation[];
-  selected: ElementType | undefined;
-  selectedKeyframe: number;
-};
+  content: {
+    [id: string]: SceneObject;
+  }
+}
 
 export type ProjectsData = Partial<{
-  light_position: Vector3Tuple;
-  sphere_transformation: Transformation[];
-  cube_transformation: Transformation[];
-  cone_transformation: Transformation[];
+  scene: SceneData;
   edited_by_client: string;
   edited_at: string;
 }>;

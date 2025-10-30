@@ -1,8 +1,8 @@
 import { getVoidObject, type PointerEventsMap } from "@pmndrs/pointer-events";
 import { Billboard, Line, RoundedBox, Text } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
-import { useXR } from "@react-three/xr";
 import { Handle, HandleTarget } from "@react-three/handle";
+import { useXR } from "@react-three/xr";
 import { type RefObject, useEffect, useMemo, useRef } from "react";
 import {
   DirectionalLight,
@@ -13,7 +13,6 @@ import {
   type Vector3Tuple,
 } from "three";
 import { useEditorStore, useSceneStore } from "~/stores";
-import type { TransformKey } from "~/types";
 import { SunGeometry } from "../customGeometries";
 import CustomTransformHandles from "../interaction/CustomTransformHandles";
 import Hover from "../interaction/Hover";
@@ -60,7 +59,7 @@ export default function SceneContent({
       scene as unknown as Object3D<Object3DEventMap & PointerEventsMap>,
     ) as Object3D<Object3DEventMap & PointerEventsMap>;
     const deselectHandler = () => {
-      useSceneStore.setState({ selected: undefined, selectedKeyframe: 0 });
+      useEditorStore.setState({ selectedObjId: undefined });
       setIsAuthoringAnimation(false);
     };
     voidObject.addEventListener("click", deselectHandler);
@@ -71,15 +70,16 @@ export default function SceneContent({
 
   const pivotSize = isInScreen ? 2 : 1;
   const isAuthoringAnimation = useEditorStore((s) => s.isAuthoringAnimation);
-  const selected = useSceneStore((s) => s.selected);
-  const selectedKeyframe = useSceneStore((s) => s.selectedKeyframe);
-
-  const transformKey: TransformKey | undefined = selected
-    ? (`${selected}Transformation` as TransformKey)
-    : undefined;
+  const selectedObjId = useEditorStore((s) => s.selectedObjId);
+  const objStateIdxMap = useEditorStore((s) => s.objStateIdxMap);
+  const setObjStateIdxMap = useEditorStore((s) => s.setObjStateIdxMap);
   const EMPTY: [] = [];
-  const keyframes = useSceneStore((s) =>
-    transformKey ? s[transformKey] : EMPTY,
+  const objStates = useSceneStore((s) =>
+    selectedObjId ? (s.content[selectedObjId]?.states ?? EMPTY) : EMPTY,
+  );
+  const objects = useSceneStore((s) => s.content);
+  const selectedObjType = useSceneStore((s) =>
+    selectedObjId ? s.content[selectedObjId]?.type : undefined,
   );
 
   return (
@@ -90,7 +90,14 @@ export default function SceneContent({
         <Text fontSize={0.001} position={[1000, 1000, 1000]}>
           .
         </Text>
-        <Line points={[[0, 0, 0], [0, 0.001, 0]]} color="white" lineWidth={1} />
+        <Line
+          points={[
+            [0, 0, 0],
+            [0, 0.001, 0],
+          ]}
+          color="white"
+          lineWidth={1}
+        />
       </group>
       <Hover hoverTargetRef={sunHoverTargetRef as RefObject<Object3D | null>}>
         {(hovered) => (
@@ -145,73 +152,61 @@ export default function SceneContent({
           </>
         )}
       </Hover>
-      <CustomTransformHandles size={pivotSize} target="cone">
-        <Hover>
-          {(hovered) => (
-            <mesh castShadow receiveShadow scale={0.1}>
-              <cylinderGeometry args={[0, 1]} />
-              <meshStandardMaterial
-                emissiveIntensity={hovered || (isInXR && selected === "cone") ? 0.3 : 0}
-                emissive={(isInXR && selected === "cone") ? "skyblue" : "brown"}
-                toneMapped={false}
-                color={(isInXR && selected === "cone") ? "skyblue" : "brown"}
-              />
-            </mesh>
-          )}
-        </Hover>
-      </CustomTransformHandles>
-
-      <CustomTransformHandles size={pivotSize} target="sphere">
-        <Hover>
-          {(hovered) => (
-            <mesh castShadow receiveShadow scale={0.1}>
-              <sphereGeometry />
-              <meshStandardMaterial
-                emissiveIntensity={hovered || (isInXR && selected === "sphere") ? 0.3 : 0}
-                emissive={(isInXR && selected === "sphere") ? "skyblue" : "salmon"}
-                toneMapped={false}
-                color={(isInXR && selected === "sphere") ? "skyblue" : "salmon"}
-              />
-            </mesh>
-          )}
-        </Hover>
-      </CustomTransformHandles>
-      <CustomTransformHandles size={pivotSize} target="cube">
-        <Hover>
-          {(hovered) => (
-            <mesh castShadow receiveShadow scale={0.1}>
-              <boxGeometry />
-              <meshStandardMaterial
-                emissiveIntensity={hovered || (isInXR && selected === "cube") ? 0.3 : 0}
-                emissive={(isInXR && selected === "cube") ? "skyblue" : "orangered"}
-                toneMapped={false}
-                color={(isInXR && selected === "cube") ? "skyblue" : "orangered"}
-              />
-            </mesh>
-          )}
-        </Hover>
-      </CustomTransformHandles>
+      {Object.entries(objects).map(([id, obj]) => (
+        <CustomTransformHandles key={id} size={pivotSize} objectId={id}>
+          <Hover>
+            {(hovered) => {
+              const baseColor =
+                obj.type === "sphere"
+                  ? "salmon"
+                  : obj.type === "cube"
+                    ? "orangered"
+                    : "brown";
+              const isSel = isInXR && selectedObjId === id;
+              const color = isSel ? "skyblue" : baseColor;
+              return (
+                <mesh castShadow receiveShadow scale={0.1}>
+                  {obj.type === "sphere" && <sphereGeometry />}
+                  {obj.type === "cube" && <boxGeometry />}
+                  {obj.type === "cone" && <cylinderGeometry args={[0, 1]} />}
+                  <meshStandardMaterial
+                    emissiveIntensity={hovered || isSel ? 0.3 : 0}
+                    emissive={isSel ? "skyblue" : 0xffffff}
+                    toneMapped={false}
+                    color={color}
+                  />
+                </mesh>
+              );
+            }}
+          </Hover>
+        </CustomTransformHandles>
+      ))}
 
       <Platform lightTarget={lightTarget} />
-      <group visible={isAuthoringAnimation && selected != null}>
-        {keyframes.map((keyframe, i) => {
-          if (i === selectedKeyframe) return null;
+      <group visible={isAuthoringAnimation && selectedObjId != null}>
+        {objStates.map((objState, i) => {
+          const selectedObjStateIdx = selectedObjId
+            ? (objStateIdxMap[selectedObjId] ?? 0)
+            : 0;
+          if (i === selectedObjStateIdx) return null;
           return (
-            <Hover key={`kf-${selected ?? 'none'}-${i}`}>
+            <Hover key={`obj-state-${selectedObjId ?? "none"}-${i}`}>
               {(hovered) => (
                 <mesh
-                  position={keyframe.position}
-                  rotation={keyframe.rotation}
-                  scale={keyframe.scale.map((s) => s * 0.02) as Vector3Tuple}
+                  position={objState.position}
+                  rotation={objState.rotation}
+                  scale={objState.scale.map((s) => s * 0.02) as Vector3Tuple}
                   onClick={(e) => {
                     e.stopPropagation();
-                    useSceneStore.setState({ selectedKeyframe: i });
+                    setObjStateIdxMap(i);
                   }}
                 >
-                  {selected === "sphere" && <sphereGeometry />}
-                  {selected === "cube" && <boxGeometry />}
-                  {selected === "cone" && <cylinderGeometry args={[0, 1]} />}
-                  {selected == null && <sphereGeometry />}
+                  {selectedObjType === "sphere" && <sphereGeometry />}
+                  {selectedObjType === "cube" && <boxGeometry />}
+                  {selectedObjType === "cone" && (
+                    <cylinderGeometry args={[0, 1]} />
+                  )}
+                  {selectedObjId == null && <sphereGeometry />}
                   <meshStandardMaterial
                     emissiveIntensity={hovered ? 0.3 : 0}
                     emissive={0xffffff}
@@ -224,25 +219,32 @@ export default function SceneContent({
           );
         })}
       </group>
-      <group visible={isAuthoringAnimation && selected != null && keyframes.length > 1}>
-        {keyframes.slice(0, -1).map((kf, i) => (
+      <group
+        visible={
+          isAuthoringAnimation && selectedObjId != null && objStates.length > 1
+        }
+      >
+        {objStates.slice(0, -1).map((objState, i) => (
           <Line
-            key={`kf-line-${selected ?? 'none'}-${i}`}
-            points={[kf.position, keyframes[i + 1].position]}
+            key={`obj-state-line-${selectedObjId ?? "none"}-${i}`}
+            points={[objState.position, objStates[i + 1].position]}
             color="gray"
             lineWidth={1}
             dashed={false}
           />
         ))}
-        {keyframes.map((kf, i) => {
-          if (i === selectedKeyframe) return null;
+        {objStates.map((objState, i) => {
+          const selectedObjStateIdx = selectedObjId
+            ? (objStateIdxMap[selectedObjId] ?? 0)
+            : 0;
+          if (i === selectedObjStateIdx) return null;
           return (
             <Billboard
-              key={`kf-label-${selected ?? 'none'}-${i}`}
+              key={`obj-state-label-${selectedObjId ?? "none"}-${i}`}
               position={[
-                kf.position[0],
-                kf.position[1] + 0.035,
-                kf.position[2],
+                objState.position[0],
+                objState.position[1] + 0.035,
+                objState.position[2],
               ]}
               follow
             >

@@ -1,6 +1,6 @@
 import { useRef, type RefObject } from "react";
 import { Mesh, Object3D } from "three";
-import { useEditorStore, useSceneStore } from "~/stores";
+import { useEditorStore } from "~/stores";
 import Hover from "./Hover";
 
 export default function ModeToggleHandle({
@@ -15,7 +15,7 @@ export default function ModeToggleHandle({
   const toggleMode = useEditorStore((s) => s.toggleMode);
   const onClick = () => {
     toggleMode();
-    useSceneStore.setState({ selectedKeyframe: 0 });
+    useEditorStore.getState().setObjStateIdxMap(0);
   };
 
   return (
