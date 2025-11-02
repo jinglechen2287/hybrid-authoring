@@ -1,6 +1,6 @@
 import { type Vector3Tuple } from "three";
 
-export type ElementType = "sphere" | "cube" | "cone";
+export type ObjType = "sphere" | "cube" | "cone";
 
 export type Vec3InputType = "position" | "rotation" | "scale";
 
@@ -19,15 +19,15 @@ export type ObjState = {
   transitionTo: string;
 };
 
-export type SceneObject = {
-  type: ElementType;
+export type SceneObj = {
+  type: ObjType;
   states: Transform[];
 };
 
 export type SceneData = {
   lightPosition: Vector3Tuple;
   content: {
-    [id: string]: SceneObject;
+    [id: string]: SceneObj;
   };
 };
 
