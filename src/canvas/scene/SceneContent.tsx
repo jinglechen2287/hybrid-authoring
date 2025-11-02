@@ -1,5 +1,5 @@
 import { getVoidObject, type PointerEventsMap } from "@pmndrs/pointer-events";
-import { Billboard, Line, RoundedBox, Text } from "@react-three/drei";
+import { Billboard, Line, QuadraticBezierLine, RoundedBox, Text } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { Handle, HandleTarget } from "@react-three/handle";
 import { useXR } from "@react-three/xr";
@@ -9,10 +9,13 @@ import {
   Group,
   Mesh,
   Object3D,
+  Vector3,
   type Object3DEventMap,
   type Vector3Tuple,
 } from "three";
 import { useEditorStore, useSceneStore } from "~/stores";
+import { produce } from "immer";
+import type { SceneData, TriggerType } from "~/types";
 import { SunGeometry } from "../customGeometries";
 import CustomTransformHandles from "../interaction/CustomTransformHandles";
 import Hover from "../interaction/Hover";
@@ -23,6 +26,20 @@ export default function SceneContent({
 }: {
   isInScreen?: boolean;
 }) {
+  const getTransitionColor = (trigger: TriggerType) => {
+    switch (trigger) {
+      case "click":
+        return "orangered";
+      case "hoverStart":
+        return "skyblue";
+      case "hoverEnd":
+        return "green";
+      case "auto":
+        return "white";
+      default:
+        return "gray";
+    }
+  };
   const isInXR = useXR((s) => s.session != null);
   const lightTarget = useMemo(
     () => new Object3D() as Object3D<Object3DEventMap & PointerEventsMap>,
@@ -58,6 +75,7 @@ export default function SceneContent({
     ) as Object3D<Object3DEventMap & PointerEventsMap>;
     const deselectHandler = () => {
       useEditorStore.setState({ selectedObjId: undefined });
+      useEditorStore.getState().cancelConnecting();
     };
     voidObject.addEventListener("click", deselectHandler);
     return () => voidObject.removeEventListener("click", deselectHandler);
@@ -71,6 +89,13 @@ export default function SceneContent({
   const selectedObjId = useEditorStore((s) => s.selectedObjId);
   const objStateIdxMap = useEditorStore((s) => s.objStateIdxMap);
   const setObjStateIdxMap = useEditorStore((s) => s.setObjStateIdxMap);
+  const isConnecting = useEditorStore((s) => s.isConnecting);
+  const connectingFromObjId = useEditorStore((s) => s.connectingFromObjId);
+  const connectingFromStateId = useEditorStore(
+    (s) => s.connectingFromStateId,
+  );
+  const connectingTrigger = useEditorStore((s) => s.connectingTrigger);
+  const cancelConnecting = useEditorStore((s) => s.cancelConnecting);
   const EMPTY: [] = [];
   const objStates = useSceneStore((s) =>
     selectedObjId ? (s.content[selectedObjId]?.states ?? EMPTY) : EMPTY,
@@ -191,11 +216,38 @@ export default function SceneContent({
             <Hover key={`obj-state-${selectedObjId ?? "none"}-${i}`}>
               {(hovered) => (
                 <mesh
-                  position={objState.position}
-                  rotation={objState.rotation}
-                  scale={objState.scale.map((s) => s * 0.02) as Vector3Tuple}
+                  position={objState.transform.position}
+                  rotation={objState.transform.rotation}
+                  scale={
+                    objState.transform.scale.map(
+                      (s) => s * 0.02,
+                    ) as Vector3Tuple
+                  }
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (
+                      isConnecting &&
+                      connectingFromObjId === selectedObjId &&
+                      connectingFromStateId
+                    ) {
+                      // Finalize connection: set transitionTo on from-state to this state's id
+                      useSceneStore.setState(
+                        produce((sceneData: SceneData) => {
+                          if (!selectedObjId) return;
+                          const objStates = sceneData.content[selectedObjId]?.states;
+                          if (!objStates || objStates.length === 0) return;
+                          const fromIdx = objStates.findIndex(
+                            (s) => s.id === connectingFromStateId,
+                          );
+                          const from = objStates[fromIdx];
+                          if (!from) return;
+                          from.transitionTo = objState.id;
+                          from.trigger = connectingTrigger || "click";
+                        }),
+                      );
+                      cancelConnecting();
+                      return;
+                    }
                     setObjStateIdxMap(i);
                   }}
                 >
@@ -218,19 +270,60 @@ export default function SceneContent({
         })}
       </group>
       <group
-        visible={
-          isEditMode && selectedObjId != null && objStates.length > 1
-        }
+        visible={isEditMode && selectedObjId != null && objStates.length > 1}
       >
-        {objStates.slice(0, -1).map((objState, i) => (
-          <Line
-            key={`obj-state-line-${selectedObjId ?? "none"}-${i}`}
-            points={[objState.position, objStates[i + 1].position]}
-            color="gray"
-            lineWidth={1}
-            dashed={false}
-          />
-        ))}
+        {objStates.map((fromState, i) => {
+          const toIndex = fromState.transitionTo
+            ? objStates.findIndex((s) => s.id === fromState.transitionTo)
+            : -1;
+          if (toIndex < 0) return null;
+          const toState = objStates[toIndex];
+          const isReciprocal = toState.transitionTo === fromState.id;
+          const startArr = fromState.transform.position;
+          const endArr = toState.transform.position;
+          if (isReciprocal) {
+            const start = new Vector3(...startArr);
+            const end = new Vector3(...endArr);
+            const mid = start.clone().add(end).multiplyScalar(0.5);
+            const dir = end.clone().sub(start);
+            const up = new Vector3(0, 1, 0);
+            const alt = new Vector3(1, 0, 0);
+            const dirNorm = dir.clone().normalize();
+            const base = Math.abs(dirNorm.dot(up)) > 0.99 ? alt : up;
+            let perp = dir.clone().cross(base);
+            if (perp.lengthSq() < 1e-8) {
+              // Fallback if dir is degenerate
+              perp = new Vector3(0, 0, 1);
+            } else {
+              perp.normalize();
+            }
+            const offsetMag = Math.max(0.05, Math.min(0.08, dir.length() * 0.1));
+            const midOffset = mid.add(perp.multiplyScalar(offsetMag));
+            return (
+              <QuadraticBezierLine
+                key={`obj-state-curve-${selectedObjId ?? "none"}-${i}-to-${toIndex}`}
+                start={startArr}
+                end={endArr}
+                mid={[midOffset.x, midOffset.y, midOffset.z]}
+                color={getTransitionColor(fromState.trigger)}
+                lineWidth={1}
+                dashed={false}
+              />
+            );
+          }
+          return (
+            <Line
+              key={`obj-state-line-${selectedObjId ?? "none"}-${i}-to-${toIndex}`}
+              points={[
+                startArr,
+                endArr,
+              ]}
+              color={getTransitionColor(fromState.trigger)}
+              lineWidth={1}
+              dashed={false}
+            />
+          );
+        })}
         {objStates.map((objState, i) => {
           const selectedObjStateIdx = selectedObjId
             ? (objStateIdxMap[selectedObjId] ?? 0)
@@ -240,9 +333,9 @@ export default function SceneContent({
             <Billboard
               key={`obj-state-label-${selectedObjId ?? "none"}-${i}`}
               position={[
-                objState.position[0],
-                objState.position[1] + 0.035,
-                objState.position[2],
+                objState.transform.position[0],
+                objState.transform.position[1] + 0.035,
+                objState.transform.position[2],
               ]}
               follow
             >

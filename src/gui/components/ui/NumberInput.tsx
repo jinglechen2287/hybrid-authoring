@@ -23,7 +23,7 @@ export default function NumberInput({
   const objStateIdx = objStateIdxMap[selectedObjId] ?? 0;
   const objState = objStates[objStateIdx] ?? objStates[0];
   if (!objState) return null;
-  const value = objState[type][index];
+  const value = objState.transform[type][index];
 
   const valueChangeHandler = (details: ValueChangeDetails) => {
     useSceneStore.setState(
@@ -35,7 +35,7 @@ export default function NumberInput({
         const objStates = target.states;
         if (!objStates || objStates.length === 0) return;
         const idx = Math.min(objStateIdx, objStates.length - 1);
-        objStates[idx][type][index] = value;
+        objStates[idx].transform[type][index] = value;
       }),
     );
   };

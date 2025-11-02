@@ -1,9 +1,11 @@
 import { produce } from "immer";
 import { Minus, Plus } from "lucide-react";
 import { useMemo } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { useEditorStore, useSceneStore } from "~/stores";
-import type { SceneData } from "~/types";
+import type { SceneData, TriggerType } from "~/types";
 import Section from "../layouts/Section";
+import type { Vector3Tuple } from "three";
 
 export default function StatesSection() {
   const selectedObjId = useEditorStore((s) => s.selectedObjId);
@@ -26,11 +28,17 @@ export default function StatesSection() {
         if (!objStates || objStates.length === 0) return;
         const base =
           objStates[selectedObjStateIdx] ?? objStates[objStates.length - 1];
-        objStates.splice(selectedObjStateIdx + 1, 0, {
-          position: [...base.position],
-          rotation: [...base.rotation],
-          scale: [...base.scale],
-        });
+        const newState = {
+          id: uuidv4(),
+          transform: {
+            position: [...base.transform.position] as Vector3Tuple,
+            rotation: [...base.transform.rotation] as Vector3Tuple,
+            scale: [...base.transform.scale] as Vector3Tuple,
+          },
+          trigger: "" as TriggerType,
+          transitionTo: "",
+        };
+        objStates.splice(selectedObjStateIdx + 1, 0, newState);
       }),
     );
     setObjStateIdxMap(selectedObjStateIdx + 1);

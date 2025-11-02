@@ -9,19 +9,33 @@ export default function Select({
   label,
   placeholder,
   items,
+  value,
+  onValueChange,
 }: {
   label: string;
   placeholder?: string;
-  items: string[];
+  items: Array<string | { label: string; value: string }>;
+  value?: string;
+  onValueChange?: (value: string) => void;
 }) {
+  const normalized = items.map((i) =>
+    typeof i === "string" ? { label: i, value: i } : i,
+  );
+  const valueToLabel = new Map(normalized.map((i) => [i.value, i.label]));
   const collection = createListCollection({
-    items: items,
+    items: normalized.map((i) => i.value),
+    itemToString: (value) => valueToLabel.get(String(value)) ?? String(value),
   });
 
   return (
     <ArkSelect.Root
       collection={collection}
       className="flex min-w-20 flex-col gap-2"
+      value={value ? [value] : []}
+      onValueChange={(details) => {
+        const v = details.value?.[0];
+        if (v != null) onValueChange?.(v);
+      }}
     >
       <ArkSelect.Label className="text-md font-medium text-neutral-700 dark:text-neutral-400">
         {label}
@@ -38,13 +52,13 @@ export default function Select({
         <ArkSelect.Positioner>
           <ArkSelect.Content className="z-50 min-w-(--reference-width) rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
             <ArkSelect.ItemGroup>
-              {collection.items.map((item) => (
+              {normalized.map((item) => (
                 <ArkSelect.Item
-                  key={item}
-                  item={item}
+                  key={item.value}
+                  item={item.value}
                   className="relative flex cursor-pointer items-center px-3 py-2 text-sm text-neutral-900 select-none data-highlighted:bg-neutral-100 data-[state=checked]:bg-neutral-50 dark:text-neutral-100 dark:data-highlighted:bg-neutral-700 dark:data-[state=checked]:bg-neutral-700"
                 >
-                  <ArkSelect.ItemText>{item}</ArkSelect.ItemText>
+                  <ArkSelect.ItemText>{item.label}</ArkSelect.ItemText>
                   <ArkSelect.ItemIndicator className="absolute right-3 text-blue-600 dark:text-blue-400">
                     ✓
                   </ArkSelect.ItemIndicator>

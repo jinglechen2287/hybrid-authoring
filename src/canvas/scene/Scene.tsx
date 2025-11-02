@@ -2,7 +2,7 @@ import { RoundedBox } from "@react-three/drei";
 import { Handle, HandleTarget } from "@react-three/handle";
 import { useEditorStore } from "~/stores";
 import { RotateGeometry } from "../customGeometries";
-import AddRemoveStateHandles from "../interaction/AddRemoveStateHandles";
+import StateHandles from "../interaction/StateHandles";
 import Hover from "../interaction/Hover";
 import ModeToggleHandle from "../interaction/ModeToggleHandle";
 import SceneContent from "./SceneContent";
@@ -20,7 +20,7 @@ export default function Scene({
       <SceneTransformHandles />
       <SceneRotateAndScaleHandles />
       <ModeToggleHandle />
-      {isEditMode && <AddRemoveStateHandles />}
+      {isEditMode && <StateHandles />}
       {/* <CameraHelper /> */}
     </HandleTarget>
   );
@@ -39,7 +39,7 @@ function SceneTransformHandles() {
           <RoundedBox
             position-x={0.35}
             position-y={-0.05}
-            args={[0.2, 0.2, 2]}
+            args={[0.2, 0.2, 1.2]}
             scale={hovered ? 0.125 : 0.1}
           >
             <meshStandardMaterial

@@ -4,7 +4,7 @@ export type ObjType = "sphere" | "cube" | "cone";
 
 export type Vec3InputType = "position" | "rotation" | "scale";
 
-export type TriggerType = "click" | "hoverStart" | "hoverEnd" | "auto";
+export type TriggerType = "click" | "hoverStart" | "hoverEnd" | "auto" | "";
 
 export type Transform = {
   position: Vector3Tuple;
@@ -21,7 +21,7 @@ export type ObjState = {
 
 export type SceneObj = {
   type: ObjType;
-  states: Transform[];
+  states: ObjState[];
 };
 
 export type SceneData = {
