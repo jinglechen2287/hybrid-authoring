@@ -18,7 +18,7 @@ alwaysApply: true
 - **Lint**: `npm run lint`
 
 ## XR and Canvas Runtime
-- `src/canvas/Canvas.tsx` wraps the app in `<XR store={xrStore}>` and uses `PointerEvents`, `OrbitHandles`, and optionally `Screen`.
+- `src/canvas/Canvas.tsx` wraps the app in `<XR store={xrStore}>`, sets `events={noEvents}`, and uses `PointerEvents`, `OrbitHandles`, and `XROrigin`. `Screen` is optional and currently commented out.
 - Background sphere hidden in immersive AR: `<IfInSessionMode deny="immersive-ar">`.
 - `xrStore` comes from `createXRStore` and is re-exported from `~/stores`.
 
@@ -26,11 +26,13 @@ alwaysApply: true
 - `src/canvas/scene/Scene.tsx` composes `SceneContent` and transform handles.
 - `src/canvas/scene/SceneContent.tsx` manages directional light, hover/handles, and object pivots; uses `useSceneStore`.
 - `src/canvas/Screen.tsx` adds an `XRLayer` subscene using `EffectComposer` + gamma `ShaderPass`.
+- Scene-level utility handles include `ModeToggleHandle` and `AddRemoveStateHandles` (visible in edit mode).
 
 ## State Flows
-- `src/stores/sceneStore.ts` owns `lightPosition`, per-object `Transformations`, and `selected` element.
+- `src/stores/sceneStore.ts` owns `lightPosition` and per-object states under `content`.
 - `src/stores/cameraStore.ts` uses `createScreenCameraStore`.
 - `src/stores/xrStore.ts` uses `createXRStore`.
+- `src/stores/editorStore.ts` owns editor UI state: `mode`, `selectedObjId`, and `objStateIdxMap`.
 - Re-exports in `src/stores/index.ts` for `~/stores` imports.
 
 ## Supabase Realtime
@@ -38,7 +40,7 @@ alwaysApply: true
 - `startSceneSync(projectId)` in `src/supabase/subscription.ts`:
   - Initial fetch hydrates store state.
   - Realtime channel on `projects` table.
-  - Debounced store→DB updates with loop prevention via `clientId` and snapshots.
+  - Debounced store→DB updates with loop prevention via `clientId`, `isApplyingRemoteUpdate`, and snapshots.
 
 ## CSS and Styling
 - Tailwind CSS 4 via `@tailwindcss/vite`.
@@ -53,4 +55,4 @@ alwaysApply: true
 ## Environment
 Create `.env.local` with:
 - `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`# Project Stack and Workflows
+- `VITE_SUPABASE_ANON_KEY`
