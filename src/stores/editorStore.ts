@@ -5,8 +5,6 @@ type EditorMode = "edit" | "play";
 type EditorStore = {
   mode: EditorMode;
   toggleMode: () => void;
-  isAuthoringAnimation: boolean;
-  setIsAuthoringAnimation: (value: boolean) => void;
   selectedObjId: string | undefined;
   setSelectedObjId: (value: string | undefined) => void;
   objStateIdxMap: Record<string, number>;
@@ -20,14 +18,7 @@ export const useEditorStore = create<EditorStore>((set) => ({
       const nextMode = state.mode === "edit" ? "play" : "edit";
       return {
         mode: nextMode,
-        isAuthoringAnimation:
-          nextMode === "play" ? false : state.isAuthoringAnimation,
       };
-    }),
-  isAuthoringAnimation: false,
-  setIsAuthoringAnimation: (value: boolean) =>
-    set({
-      isAuthoringAnimation: value,
     }),
   selectedObjId: undefined,
   setSelectedObjId: (value) =>

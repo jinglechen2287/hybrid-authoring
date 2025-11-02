@@ -1,9 +1,10 @@
-import Vec3Input from "../layouts/Vec3Input";
 import Vec3InputContextProvider from "~/gui/contexts/Vec3InputContextProvider";
+import Section from "../layouts/Section";
+import Vec3Input from "../layouts/Vec3Input";
 
-export default function Transform() {
+export default function TransformSection() {
   return (
-    <div className="flex flex-col gap-6">
+    <Section title="Transform">
       <Vec3InputContextProvider type="position">
         <Vec3Input />
       </Vec3InputContextProvider>
@@ -13,6 +14,6 @@ export default function Transform() {
       <Vec3InputContextProvider type="scale">
         <Vec3Input />
       </Vec3InputContextProvider>
-    </div>
+    </Section>
   );
 }

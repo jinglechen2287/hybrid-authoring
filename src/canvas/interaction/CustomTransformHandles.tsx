@@ -13,7 +13,7 @@ import {
 } from "react";
 import { Group, Object3D, type Vector3Tuple } from "three";
 import { useEditorStore, useSceneStore } from "~/stores";
-import type { SceneData, Transformation } from "~/types";
+import type { SceneData, Transform } from "~/types";
 import { vibrateOnEvent } from "./vibrateOnEvent";
 
 export default function CustomTransformHandles({
@@ -32,7 +32,7 @@ export default function CustomTransformHandles({
   const animationStartRef = useRef<number | null>(null);
   const lastObjStateCountRef = useRef<number>(0);
   useEffect(() => {
-    const updateTarget = ({ position, rotation, scale }: Transformation) => {
+    const updateTarget = ({ position, rotation, scale }: Transform) => {
       if (targetRef.current == null) {
         return;
       }

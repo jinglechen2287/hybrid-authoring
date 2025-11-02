@@ -51,25 +51,23 @@ export default function SceneContent({
   }, []);
 
   const scene = useThree((s) => s.scene);
-  const setIsAuthoringAnimation = useEditorStore(
-    (s) => s.setIsAuthoringAnimation,
-  );
+
   useEffect(() => {
     const voidObject = getVoidObject(
       scene as unknown as Object3D<Object3DEventMap & PointerEventsMap>,
     ) as Object3D<Object3DEventMap & PointerEventsMap>;
     const deselectHandler = () => {
       useEditorStore.setState({ selectedObjId: undefined });
-      setIsAuthoringAnimation(false);
     };
     voidObject.addEventListener("click", deselectHandler);
     return () => voidObject.removeEventListener("click", deselectHandler);
-  }, [scene, setIsAuthoringAnimation]);
+  }, [scene]);
 
   const sunHoverTargetRef = useRef<Mesh>(null);
 
   const pivotSize = isInScreen ? 2 : 1;
-  const isAuthoringAnimation = useEditorStore((s) => s.isAuthoringAnimation);
+  const mode = useEditorStore((s) => s.mode);
+  const isEditMode = mode === "edit";
   const selectedObjId = useEditorStore((s) => s.selectedObjId);
   const objStateIdxMap = useEditorStore((s) => s.objStateIdxMap);
   const setObjStateIdxMap = useEditorStore((s) => s.setObjStateIdxMap);
@@ -183,7 +181,7 @@ export default function SceneContent({
       ))}
 
       <Platform lightTarget={lightTarget} />
-      <group visible={isAuthoringAnimation && selectedObjId != null}>
+      <group visible={isEditMode && selectedObjId != null}>
         {objStates.map((objState, i) => {
           const selectedObjStateIdx = selectedObjId
             ? (objStateIdxMap[selectedObjId] ?? 0)
@@ -221,7 +219,7 @@ export default function SceneContent({
       </group>
       <group
         visible={
-          isAuthoringAnimation && selectedObjId != null && objStates.length > 1
+          isEditMode && selectedObjId != null && objStates.length > 1
         }
       >
         {objStates.slice(0, -1).map((objState, i) => (

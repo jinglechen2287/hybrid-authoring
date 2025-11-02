@@ -4,23 +4,32 @@ export type ElementType = "sphere" | "cube" | "cone";
 
 export type Vec3InputType = "position" | "rotation" | "scale";
 
-export type Transformation = {
+export type TriggerType = "click" | "hoverStart" | "hoverEnd" | "auto";
+
+export type Transform = {
   position: Vector3Tuple;
   rotation: Vector3Tuple;
   scale: Vector3Tuple;
 };
 
+export type ObjState = {
+  id: string;
+  transform: Transform;
+  trigger: TriggerType;
+  transitionTo: string;
+};
+
 export type SceneObject = {
-    type: ElementType;
-    states: Transformation[];
-}
+  type: ElementType;
+  states: Transform[];
+};
 
 export type SceneData = {
   lightPosition: Vector3Tuple;
   content: {
     [id: string]: SceneObject;
-  }
-}
+  };
+};
 
 export type ProjectsData = Partial<{
   scene: SceneData;

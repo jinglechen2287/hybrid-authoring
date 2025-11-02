@@ -1,4 +1,4 @@
-import Tabs from "~/gui/components/sections/Tabs";
+import Sections from "~/gui/components/sections/Sections";
 import { useEditorStore } from "~/stores";
 
 export default function GUI() {
@@ -6,7 +6,7 @@ export default function GUI() {
   const mode = useEditorStore((state) => state.mode);
   return (
     <section className="h-full w-1/3 min-w-96 bg-neutral-900 p-4">
-      {selectedObjId && mode === "edit" && <Tabs />}
+      {selectedObjId && mode === "edit" && <Sections />}
       {!selectedObjId && mode === "edit" && (
         <p className="text-white">Select an object</p>
       )}

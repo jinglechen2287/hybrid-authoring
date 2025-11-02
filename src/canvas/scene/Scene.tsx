@@ -3,7 +3,6 @@ import { Handle, HandleTarget } from "@react-three/handle";
 import { useEditorStore } from "~/stores";
 import { RotateGeometry } from "../customGeometries";
 import AddRemoveStateHandles from "../interaction/AddRemoveStateHandles";
-import AuthorAnimationToggleHandle from "../interaction/AuthorAnimationToggleHandle";
 import Hover from "../interaction/Hover";
 import ModeToggleHandle from "../interaction/ModeToggleHandle";
 import SceneContent from "./SceneContent";
@@ -13,15 +12,15 @@ export default function Scene({
 }: {
   isInScreen?: boolean;
 }) {
-  const isAuthoringAnimation = useEditorStore((s) => s.isAuthoringAnimation);
+  const mode = useEditorStore((s) => s.mode);
+  const isEditMode = mode === "edit";
   return (
     <HandleTarget>
       <SceneContent isInScreen={isInScreen} />
       <SceneTransformHandles />
       <SceneRotateAndScaleHandles />
       <ModeToggleHandle />
-      <AuthorAnimationToggleHandle />
-      {isAuthoringAnimation && <AddRemoveStateHandles />}
+      {isEditMode && <AddRemoveStateHandles />}
       {/* <CameraHelper /> */}
     </HandleTarget>
   );

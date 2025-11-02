@@ -6,7 +6,7 @@ import type { SceneData } from "~/types";
 import Hover from "./Hover";
 
 export default function AddRemoveStateHandles({
-  position = [0.35, 0.08, -0.24] as [number, number, number],
+  position = [0.35, -0.05, -0.26] as [number, number, number],
   scale = 1.2,
 }: {
   position?: [number, number, number];
@@ -23,9 +23,11 @@ export default function AddRemoveStateHandles({
   const setObjStateIdxMap = useEditorStore((s) => s.setObjStateIdxMap);
   const EMPTY: [] = [];
   const states = useSceneStore((s) =>
-    selectedObjId ? s.content[selectedObjId]?.states ?? EMPTY : EMPTY,
+    selectedObjId ? (s.content[selectedObjId]?.states ?? EMPTY) : EMPTY,
   );
-  const selectedObjStateIdx = selectedObjId ? objStateIdxMap[selectedObjId] ?? 0 : 0;
+  const selectedObjStateIdx = selectedObjId
+    ? (objStateIdxMap[selectedObjId] ?? 0)
+    : 0;
 
   const onAdd = () => {
     if (!selectedObjId) return;
@@ -33,7 +35,8 @@ export default function AddRemoveStateHandles({
       produce((sceneData: SceneData) => {
         const objStates = sceneData.content[selectedObjId]?.states;
         if (!objStates || objStates.length === 0) return;
-        const base = objStates[selectedObjStateIdx] ?? objStates[objStates.length - 1];
+        const base =
+          objStates[selectedObjStateIdx] ?? objStates[objStates.length - 1];
         objStates.splice(selectedObjStateIdx + 1, 0, {
           position: [...base.position],
           rotation: [...base.rotation],
@@ -49,7 +52,7 @@ export default function AddRemoveStateHandles({
         void a.play();
       }
     } catch {
-      // Ignore audio play errors (e.g., autoplay restrictions)
+      console.error("Failed to play confirm audio");
     }
   };
 
@@ -74,12 +77,12 @@ export default function AddRemoveStateHandles({
         void a.play();
       }
     } catch {
-      // Ignore audio play errors (e.g., autoplay restrictions)
+      console.error("Failed to play confirm audio");
     }
   };
 
   return (
-    <group position={position}>
+    <group position={position} visible={selectedObjId != null}>
       <Hover hoverTargetRef={addRef as RefObject<Object3D | null>}>
         {(hovered) => (
           <group
@@ -113,7 +116,7 @@ export default function AddRemoveStateHandles({
         {(hovered) => (
           <group
             ref={removeRef}
-            position-y={-0.06}
+            position-z={0.07}
             scale={hovered ? scale * 0.036 : scale * 0.032}
             onClick={onRemove}
           >
