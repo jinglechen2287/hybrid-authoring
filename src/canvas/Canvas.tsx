@@ -24,7 +24,7 @@ export default function Canvas() {
         <group>
           <PointerEvents />
           <OrbitHandles damping />
-          <XROrigin position={[0.5, -1.5, 0]} rotation={[0, Math.PI / 2, 0]} />
+          <XROrigin position={[0.5, -1, 0]} rotation={[0, Math.PI / 2, 0]} />
           <Scene />
           {/* <Screen /> */}
         </group>

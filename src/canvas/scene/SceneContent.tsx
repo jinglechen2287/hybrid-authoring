@@ -175,6 +175,7 @@ export default function SceneContent({
           </>
         )}
       </Hover>
+
       {Object.entries(objects).map(([id, obj]) => (
         <CustomTransformHandles key={id} size={pivotSize} objectId={id}>
           <Hover>
@@ -324,6 +325,7 @@ export default function SceneContent({
             />
           );
         })}
+        
         {objStates.map((objState, i) => {
           const selectedObjStateIdx = selectedObjId
             ? (objStateIdxMap[selectedObjId] ?? 0)
