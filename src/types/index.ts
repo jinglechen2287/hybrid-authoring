@@ -21,6 +21,7 @@ export type ObjState = {
 
 export type SceneObj = {
   type: ObjType;
+  name: string;
   states: ObjState[];
 };
 
@@ -31,8 +32,33 @@ export type SceneData = {
   };
 };
 
+export type EditorMode = "edit" | "play";
+
+export type CoreEditorData = {
+  mode: EditorMode;
+  selectedObjId: string | undefined;
+  objStateIdxMap: Record<string, number>;
+};
+
+export type EditorStore = CoreEditorData & {
+  toggleMode: () => void;
+  setSelectedObjId: (value: string | undefined) => void;
+  setObjStateIdxMap: (value: number) => void;
+
+  // Connect-mode for creating transitions between states in canvas
+  isConnecting: boolean;
+  connectingFromObjId?: string;
+  connectingFromStateId?: string;
+  connectingTrigger: TriggerType;
+  setConnectingFrom: (objId: string, stateId: string) => void;
+  cycleConnectingTrigger: () => void;
+  setConnectingTrigger: (trigger: TriggerType) => void;
+  cancelConnecting: () => void;
+};
+
 export type ProjectsData = Partial<{
   scene: SceneData;
+  editor: CoreEditorData;
   edited_by_client: string;
   edited_at: string;
 }>;

@@ -1,25 +1,5 @@
 import { create } from "zustand";
-import type { TriggerType } from "~/types";
-
-type EditorMode = "edit" | "play";
-
-type EditorStore = {
-  mode: EditorMode;
-  toggleMode: () => void;
-  selectedObjId: string | undefined;
-  setSelectedObjId: (value: string | undefined) => void;
-  objStateIdxMap: Record<string, number>;
-  setObjStateIdxMap: (value: number) => void;
-  // Connect-mode for creating transitions between states in canvas
-  isConnecting: boolean;
-  connectingFromObjId?: string;
-  connectingFromStateId?: string;
-  connectingTrigger: TriggerType;
-  setConnectingFrom: (objId: string, stateId: string) => void;
-  cycleConnectingTrigger: () => void;
-  setConnectingTrigger: (trigger: TriggerType) => void;
-  cancelConnecting: () => void;
-};
+import type { EditorStore, TriggerType } from "~/types";
 
 export const useEditorStore = create<EditorStore>((set) => ({
   mode: "edit",

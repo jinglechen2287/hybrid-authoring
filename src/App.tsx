@@ -17,7 +17,7 @@ export default function App() {
   return (
     <main className="flex h-screen flex-row items-center justify-start">
       <GUI />
-      <section className="relative h-full w-full">
+      <section className="relative h-full w-full bg-black">
         <EnterXRButtons />
         <ModeToggleButton />
         <Canvas />

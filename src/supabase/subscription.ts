@@ -1,9 +1,9 @@
 import debounce from "lodash.debounce";
 import { v4 as uuidv4 } from "uuid";
-import { useSceneStore } from "~/stores";
-import type { ProjectsData, SceneData } from "~/types";
+import { useEditorStore, useSceneStore } from "~/stores";
+import type { CoreEditorData, ProjectsData, SceneData } from "~/types";
 import { supabase } from "./supabase";
-import { pickDbFields, stringify } from "./util";
+import { pickDBFields, stringify } from "./util";
 
 const clientId = uuidv4();
 
@@ -13,14 +13,16 @@ let isApplyingRemoteUpdate = false;
 function setScene(row: ProjectsData) {
   isApplyingRemoteUpdate = true;
   try {
-    const incoming = row.scene;
+    const incomingScene = row.scene;
+    const incomingEditor = row.editor;
+
     let scene: SceneData | undefined;
     if (
-      incoming &&
-      typeof incoming === "object" &&
-      Object.prototype.hasOwnProperty.call(incoming as object, "content")
+      incomingScene &&
+      typeof incomingScene === "object" &&
+      Object.prototype.hasOwnProperty.call(incomingScene as object, "content")
     ) {
-      scene = incoming as SceneData;
+      scene = incomingScene as SceneData;
     } 
     if (scene) {
       useSceneStore.setState((prev) => ({
@@ -28,6 +30,22 @@ function setScene(row: ProjectsData) {
         content: scene?.content ?? prev.content,
       }));
       console.log(scene)
+    }
+
+    let editor: CoreEditorData | undefined;
+    if (
+      incomingEditor &&
+      typeof incomingEditor === "object" &&
+      Object.prototype.hasOwnProperty.call(incomingEditor as object, "mode")
+    ) {
+      editor = incomingEditor as CoreEditorData;
+    }
+    if (editor) {
+      useEditorStore.setState((prev) => ({
+        mode: editor.mode ?? prev.mode,
+        selectedObjId: editor.selectedObjId ?? prev.selectedObjId,
+        objStateIdxMap: editor.objStateIdxMap ?? prev.objStateIdxMap,
+      }));
     }
   } finally {
     // Yield back to event loop so subscribers see the updated state before we flip the flag
@@ -40,7 +58,7 @@ function setScene(row: ProjectsData) {
 function getProjectData(projectId: number) {
   supabase
     .from("projects")
-    .select("scene")
+    .select("scene, editor")
     .eq("id", projectId)
     .single()
     .then(({ data, error }) => {
@@ -87,16 +105,22 @@ export function startSceneSync(projectId: number = 1) {
     .subscribe();
 
   // Set up store -> database sync with debouncing and loop prevention
-  let lastSnapshotString = stringify(pickDbFields());
+  let lastSnapshotString = stringify(pickDBFields());
 
   const postUpdate = async () => {
-    const current = pickDbFields();
+    const current = pickDBFields();
     const scene: SceneData = {
       lightPosition: current.lightPosition,
       content: current.content,
     };
+    const editor: CoreEditorData = {
+      mode: current.mode,
+      selectedObjId: current.selectedObjId,
+      objStateIdxMap: current.objStateIdxMap,
+    };
     const update = {
       scene,
+      editor,
       edited_by_client: clientId,
       edited_at: new Date().toISOString(),
     };
@@ -116,22 +140,33 @@ export function startSceneSync(projectId: number = 1) {
 
   const debouncedPostUpdate = debounce(postUpdate, 10, { maxWait: 50 });
 
-  const unsubscribeStore = useSceneStore.subscribe(() => {
-    const next = pickDbFields();
+  const unsubscribeSceneStore = useSceneStore.subscribe(() => {
+    const next = pickDBFields();
     const nextString = stringify(next);
-
     if (isApplyingRemoteUpdate) {
       // Keep snapshot aligned but skip posting
       lastSnapshotString = nextString;
       return;
     }
+    if (nextString === lastSnapshotString) return;
+    debouncedPostUpdate();
+  });
 
+  const unsubscribeEditorStore = useEditorStore.subscribe(() => {
+    // FIXME: this is called when connecting related fields are changed. Less ideal.
+    const next = pickDBFields();
+    const nextString = stringify(next);
+    if (isApplyingRemoteUpdate) {
+      lastSnapshotString = nextString;
+      return;
+    }
     if (nextString === lastSnapshotString) return;
     debouncedPostUpdate();
   });
 
   return () => {
     supabase.removeChannel(channel);
-    unsubscribeStore();
+    unsubscribeSceneStore();
+    unsubscribeEditorStore();
   };
 }

@@ -1,10 +1,15 @@
-import { useSceneStore } from "~/stores";
+import { useEditorStore, useSceneStore } from "~/stores";
 
-export function pickDbFields() {
-  const state = useSceneStore.getState();
+export function pickDBFields() {
+  const scene = useSceneStore.getState();
+  const editor = useEditorStore.getState();
   return {
-    lightPosition: state.lightPosition,
-    content: state.content,
+    lightPosition: scene.lightPosition,
+    content: scene.content,
+    
+    mode: editor.mode,
+    selectedObjId: editor.selectedObjId,
+    objStateIdxMap: editor.objStateIdxMap,
   };
 }
 

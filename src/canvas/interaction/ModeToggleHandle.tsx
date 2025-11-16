@@ -16,6 +16,7 @@ export default function ModeToggleHandle({
   const onClick = () => {
     toggleMode();
     useEditorStore.getState().setObjStateIdxMap(0);
+    useEditorStore.getState().setSelectedObjId(undefined);
   };
 
   return (
