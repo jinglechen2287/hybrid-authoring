@@ -8,7 +8,7 @@ import {
   XROrigin,
 } from "@react-three/xr";
 import { BackSide } from "three";
-import { xrStore } from "~/stores";
+import { cameraStore, xrStore } from "~/stores";
 import Scene from "./scene/Scene";
 
 export default function Canvas() {
@@ -23,7 +23,7 @@ export default function Canvas() {
         <CanvasBg />
         <group>
           <PointerEvents />
-          <OrbitHandles damping />
+          <OrbitHandles damping store={cameraStore} />
           <XROrigin position={[0.5, -1, 0]} rotation={[0, Math.PI / 2, 0]} />
           <Scene />
           {/* <Screen /> */}

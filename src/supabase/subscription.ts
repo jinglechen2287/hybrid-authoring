@@ -1,11 +1,8 @@
 import debounce from "lodash.debounce";
-import { v4 as uuidv4 } from "uuid";
 import { useEditorStore, useSceneStore } from "~/stores";
 import type { CoreEditorData, ProjectsData, SceneData } from "~/types";
 import { supabase } from "./supabase";
-import { pickDBFields, stringify } from "./util";
-
-const clientId = uuidv4();
+import { clientId, pickDBFields, stringify } from "./util";
 
 // Prevent feedback loops: when applying remote data to the store, ignore store->DB sync
 let isApplyingRemoteUpdate = false;

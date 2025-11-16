@@ -1,9 +1,16 @@
 import { getVoidObject, type PointerEventsMap } from "@pmndrs/pointer-events";
-import { Billboard, Line, QuadraticBezierLine, RoundedBox, Text } from "@react-three/drei";
+import {
+  Billboard,
+  Line,
+  QuadraticBezierLine,
+  RoundedBox,
+  Text,
+} from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { Handle, HandleTarget } from "@react-three/handle";
 import { useXR } from "@react-three/xr";
-import { type RefObject, useEffect, useMemo, useRef } from "react";
+import { produce } from "immer";
+import { useEffect, useMemo, useRef, type RefObject } from "react";
 import {
   DirectionalLight,
   Group,
@@ -14,11 +21,9 @@ import {
   type Vector3Tuple,
 } from "three";
 import { useEditorStore, useSceneStore } from "~/stores";
-import { produce } from "immer";
 import type { SceneData, TriggerType } from "~/types";
 import { SunGeometry } from "../customGeometries";
-import CustomTransformHandles from "../interaction/CustomTransformHandles";
-import Hover from "../interaction/Hover";
+import { CustomTransformHandles, Hover } from "../interaction";
 import StripedLineToCenter from "./StripeLineToCenter";
 
 export default function SceneContent({
@@ -91,9 +96,7 @@ export default function SceneContent({
   const setObjStateIdxMap = useEditorStore((s) => s.setObjStateIdxMap);
   const isConnecting = useEditorStore((s) => s.isConnecting);
   const connectingFromObjId = useEditorStore((s) => s.connectingFromObjId);
-  const connectingFromStateId = useEditorStore(
-    (s) => s.connectingFromStateId,
-  );
+  const connectingFromStateId = useEditorStore((s) => s.connectingFromStateId);
   const connectingTrigger = useEditorStore((s) => s.connectingTrigger);
   const cancelConnecting = useEditorStore((s) => s.cancelConnecting);
   const EMPTY: [] = [];
@@ -235,7 +238,8 @@ export default function SceneContent({
                       useSceneStore.setState(
                         produce((sceneData: SceneData) => {
                           if (!selectedObjId) return;
-                          const objStates = sceneData.content[selectedObjId]?.states;
+                          const objStates =
+                            sceneData.content[selectedObjId]?.states;
                           if (!objStates || objStates.length === 0) return;
                           const fromIdx = objStates.findIndex(
                             (s) => s.id === connectingFromStateId,
@@ -298,7 +302,10 @@ export default function SceneContent({
             } else {
               perp.normalize();
             }
-            const offsetMag = Math.max(0.05, Math.min(0.08, dir.length() * 0.1));
+            const offsetMag = Math.max(
+              0.05,
+              Math.min(0.08, dir.length() * 0.1),
+            );
             const midOffset = mid.add(perp.multiplyScalar(offsetMag));
             return (
               <QuadraticBezierLine
@@ -315,17 +322,14 @@ export default function SceneContent({
           return (
             <Line
               key={`obj-state-line-${selectedObjId ?? "none"}-${i}-to-${toIndex}`}
-              points={[
-                startArr,
-                endArr,
-              ]}
+              points={[startArr, endArr]}
               color={getTransitionColor(fromState.trigger)}
               lineWidth={1}
               dashed={false}
             />
           );
         })}
-        
+
         {objStates.map((objState, i) => {
           const selectedObjStateIdx = selectedObjId
             ? (objStateIdxMap[selectedObjId] ?? 0)

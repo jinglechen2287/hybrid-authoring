@@ -6,9 +6,9 @@ import { Mesh, Object3D } from "three";
 import { v4 as uuidv4 } from "uuid";
 import { useEditorStore, useSceneStore } from "~/stores";
 import type { SceneData, TriggerType } from "~/types";
-import Hover from "./Hover";
+import { Hover } from "./Hover";
 
-export default function StateHandles({
+export function StateHandles({
   position = [0.35, -0.05, -0.26] as [number, number, number],
   scale = 1.2,
 }: {

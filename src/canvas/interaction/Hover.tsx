@@ -3,7 +3,7 @@ import { type ReactNode, type RefObject, useRef, useState } from "react";
 import { Group, Object3D } from "three";
 import { vibrateOnEvent } from "./vibrateOnEvent";
 
-export default function Hover({
+export function Hover({
   children,
   hoverTargetRef,
 }: {

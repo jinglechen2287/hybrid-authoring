@@ -3,15 +3,18 @@ import Canvas from "~/canvas/Canvas";
 import GUI from "~/gui/GUI";
 import { useEditorStore, xrStore } from "~/stores";
 import { startSceneSync } from "~/supabase/subscription";
+import { startCameraSync } from "~/supabase/cameraSubscription";
 import "./index.css";
 
 const projectId = 1;
 
 export default function App() {
   useEffect(() => {
-    const stop = startSceneSync(projectId);
+    const stopScene = startSceneSync(projectId);
+    const stopCamera = startCameraSync(projectId);
     return () => {
-      stop?.();
+      stopScene?.();
+      stopCamera?.();
     };
   }, []);
   return (

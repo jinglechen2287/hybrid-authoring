@@ -16,7 +16,7 @@ import { useEditorStore, useSceneStore } from "~/stores";
 import type { ObjState, SceneData, Transform, TriggerType } from "~/types";
 import { vibrateOnEvent } from "./vibrateOnEvent";
 
-export default function CustomTransformHandles({
+export function CustomTransformHandles({
   objectId,
   children,
   size,

@@ -1,9 +1,9 @@
 import { useRef, type RefObject } from "react";
 import { Mesh, Object3D } from "three";
 import { useEditorStore } from "~/stores";
-import Hover from "./Hover";
+import { Hover } from "./Hover";
 
-export default function ModeToggleHandle({
+export function ModeToggleHandle({
   position = [0.35, -0.05, -0.33] as [number, number, number],
   scale = 1,
 }: {

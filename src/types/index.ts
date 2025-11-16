@@ -56,9 +56,17 @@ export type EditorStore = CoreEditorData & {
   cancelConnecting: () => void;
 };
 
+export type CameraData = {
+  distance: number;
+  origin: Readonly<Vector3Tuple>;
+  yaw: number;
+  pitch: number;
+};
+
 export type ProjectsData = Partial<{
   scene: SceneData;
   editor: CoreEditorData;
+  camera: CameraData;
   edited_by_client: string;
   edited_at: string;
 }>;
