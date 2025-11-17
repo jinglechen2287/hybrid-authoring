@@ -40,7 +40,7 @@ function setScene(row: ProjectsData) {
     if (editor) {
       useEditorStore.setState((prev) => ({
         mode: editor.mode ?? prev.mode,
-        selectedObjId: editor.selectedObjId ?? prev.selectedObjId,
+        selectedObjId: editor.selectedObjId,
         objStateIdxMap: editor.objStateIdxMap ?? prev.objStateIdxMap,
       }));
     }

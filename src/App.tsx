@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import Canvas from "~/canvas/Canvas";
 import GUI from "~/gui/GUI";
 import { useEditorStore, xrStore } from "~/stores";
-import { startSceneSync } from "~/supabase/subscription";
+import { startSceneSync } from "~/supabase/sceneSubscription";
 import { startCameraSync } from "~/supabase/cameraSubscription";
 import "./index.css";
 

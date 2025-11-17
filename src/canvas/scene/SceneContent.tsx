@@ -8,7 +8,6 @@ import {
 } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { Handle, HandleTarget } from "@react-three/handle";
-import { useXR } from "@react-three/xr";
 import { produce } from "immer";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import {
@@ -45,7 +44,6 @@ export default function SceneContent({
         return "gray";
     }
   };
-  const isInXR = useXR((s) => s.session != null);
   const lightTarget = useMemo(
     () => new Object3D() as Object3D<Object3DEventMap & PointerEventsMap>,
     [],
@@ -189,7 +187,7 @@ export default function SceneContent({
                   : obj.type === "cube"
                     ? "orangered"
                     : "brown";
-              const isSel = isInXR && selectedObjId === id;
+              const isSel = selectedObjId === id;
               const color = isSel ? "skyblue" : baseColor;
               return (
                 <mesh castShadow receiveShadow scale={0.1}>
