@@ -42,6 +42,7 @@ function setScene(row: ProjectsData) {
         mode: editor.mode ?? prev.mode,
         selectedObjId: editor.selectedObjId,
         objStateIdxMap: editor.objStateIdxMap ?? prev.objStateIdxMap,
+        isXRConnected: editor.isXRConnected ?? prev.isXRConnected,
       }));
     }
   } finally {
@@ -114,6 +115,7 @@ export function startSceneSync(projectId: number = 1) {
       mode: current.mode,
       selectedObjId: current.selectedObjId,
       objStateIdxMap: current.objStateIdxMap,
+      isXRConnected: current.isXRConnected,
     };
     const update = {
       scene,
@@ -121,6 +123,7 @@ export function startSceneSync(projectId: number = 1) {
       edited_by_client: clientId,
       edited_at: new Date().toISOString(),
     };
+    console.log("post update", update);
 
     const { error: updateError } = await supabase
       .from("projects")

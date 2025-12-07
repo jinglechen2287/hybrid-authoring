@@ -2,25 +2,44 @@ import { useEffect } from "react";
 import Canvas from "~/canvas/Canvas";
 import GUI from "~/gui/GUI";
 import { useEditorStore, xrStore } from "~/stores";
-import { startSceneSync } from "~/supabase/sceneSubscription";
 import { startCameraSync } from "~/supabase/cameraSubscription";
+import { startSceneSync } from "~/supabase/sceneSubscription";
 import "./index.css";
 
 const projectId = 1;
 
 export default function App() {
+  const isXRConnected = useEditorStore((s) => s.isXRConnected);
+
+  useEffect(() => {
+    if (isXRConnected) {
+      document.documentElement.style.fontSize = "150%";
+    } else {
+      document.documentElement.style.fontSize = "";
+    }
+  }, [isXRConnected]);
+
   useEffect(() => {
     const stopScene = startSceneSync(projectId);
     const stopCamera = startCameraSync(projectId);
+    const stopXR = xrStore.subscribe((state) => {
+      if (state.mode && state.mode.includes("immersive")) {
+        useEditorStore.setState({ isXRConnected: true });
+      } else {
+        useEditorStore.setState({ isXRConnected: false });
+      }
+    });
     return () => {
       stopScene?.();
       stopCamera?.();
+      stopXR?.();
     };
   }, []);
+
   return (
     <main className="flex h-screen flex-row items-center justify-start">
       <GUI />
-      <section className="relative h-full w-full bg-black">
+      <section className="relative h-full flex-1 bg-black">
         <EnterXRButtons />
         <ModeToggleButton />
         <Canvas />

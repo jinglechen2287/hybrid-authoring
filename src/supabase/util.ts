@@ -13,6 +13,7 @@ export function pickDBFields() {
     mode: editor.mode,
     selectedObjId: editor.selectedObjId,
     objStateIdxMap: editor.objStateIdxMap,
+    isXRConnected: editor.isXRConnected,
   };
 }
 

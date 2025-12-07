@@ -61,6 +61,7 @@ export const useEditorStore = create<EditorStore>((set) => ({
         },
       };
     }),
+  isXRConnected: false,
   isConnecting: false,
   connectingTrigger: "click",
   setConnectingFrom: (objId, stateId) =>
