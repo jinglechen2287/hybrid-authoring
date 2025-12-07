@@ -7,6 +7,7 @@ import {
   Hover,
   ModeToggleHandle,
   StateHandles,
+  XRTransformGUI,
 } from "../interaction";
 import SceneContent from "./SceneContent";
 
@@ -18,14 +19,19 @@ export default function Scene({
   const mode = useEditorStore((s) => s.mode);
   const isEditMode = mode === "edit";
   return (
-    <HandleTarget>
-      <SceneContent isInScreen={isInScreen} />
-      <SceneTransformHandles />
-      <SceneRotateAndScaleHandles />
-      <ModeToggleHandle />
-      {isEditMode && <StateHandles />}
-      <CameraHelper />
-    </HandleTarget>
+    <group position={[0, 1, -0.5]}>
+      <HandleTarget>
+        <SceneContent isInScreen={isInScreen} />
+        <SceneTransformHandles />
+        <SceneRotateAndScaleHandles />
+        <ModeToggleHandle />
+        {isEditMode && <StateHandles />}
+        <XRTransformGUI />
+        <group position={[0, -1, 0.5]}>
+          <CameraHelper />
+        </group>
+      </HandleTarget>
+    </group>
   );
 }
 

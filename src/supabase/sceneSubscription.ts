@@ -26,7 +26,6 @@ function setScene(row: ProjectsData) {
         lightPosition: scene?.lightPosition ?? prev.lightPosition,
         content: scene?.content ?? prev.content,
       }));
-      console.log(scene)
     }
 
     let editor: CoreEditorData | undefined;
@@ -123,7 +122,6 @@ export function startSceneSync(projectId: number = 1) {
       edited_by_client: clientId,
       edited_at: new Date().toISOString(),
     };
-    console.log("post update", update);
 
     const { error: updateError } = await supabase
       .from("projects")

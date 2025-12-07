@@ -10,7 +10,7 @@ const projectId = 1;
 
 export default function App() {
   const isXRConnected = useEditorStore((s) => s.isXRConnected);
-
+  
   useEffect(() => {
     if (isXRConnected) {
       document.documentElement.style.fontSize = "150%";

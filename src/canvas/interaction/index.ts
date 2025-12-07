@@ -4,3 +4,4 @@ export * from "./ModeToggleHandle";
 export * from "./StateHandles";
 export * from "./vibrateOnEvent";
 export * from "./CustomTransformHandles";
+export * from "./XRTransformGUI";
