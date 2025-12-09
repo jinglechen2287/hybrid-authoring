@@ -64,10 +64,19 @@ export type CameraData = {
   pitch: number;
 };
 
+export type RoomPlaneData = {
+  id: string;
+  semanticLabel?: string;
+  orientation: "horizontal" | "vertical";
+  poseMatrix: number[];
+  polygon: { x: number; y: number; z: number }[];
+};
+
 export type ProjectsData = Partial<{
   scene: SceneData;
   editor: CoreEditorData;
   camera: CameraData;
+  room: RoomPlaneData[];
   edited_by_client: string;
   edited_at: string;
 }>;

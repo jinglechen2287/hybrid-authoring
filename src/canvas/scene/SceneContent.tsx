@@ -26,9 +26,9 @@ import { CustomTransformHandles, Hover } from "../interaction";
 import StripedLineToCenter from "./StripeLineToCenter";
 
 export default function SceneContent({
-  isInScreen = false,
+  isInRoom = false,
 }: {
-  isInScreen?: boolean;
+  isInRoom?: boolean;
 }) {
   const getTransitionColor = (trigger: TriggerType) => {
     switch (trigger) {
@@ -86,7 +86,6 @@ export default function SceneContent({
 
   const sunHoverTargetRef = useRef<Mesh>(null);
 
-  const pivotSize = isInScreen ? 2 : 1;
   const mode = useEditorStore((s) => s.mode);
   const isEditMode = mode === "edit";
   const selectedObjId = useEditorStore((s) => s.selectedObjId);
@@ -108,35 +107,21 @@ export default function SceneContent({
 
   return (
     <>
-      <ambientLight intensity={1.5} />
-      {/* Warm up drei Text (troika) and Line (meshline) once at load to avoid first-time suspense blank */}
-      <group visible={false}>
-        <Text fontSize={0.001} position={[1000, 1000, 1000]}>
-          .
-        </Text>
-        <Line
-          points={[
-            [0, 0, 0],
-            [0, 0.001, 0],
-          ]}
-          color="white"
-          lineWidth={1}
-        />
-      </group>
-      <Hover hoverTargetRef={sunHoverTargetRef as RefObject<Object3D | null>}>
-        {(hovered) => (
-          <>
-            {isInScreen || (
-              <StripedLineToCenter
-                color={hovered ? "white" : "gray"}
-                width={hovered ? 0.008 : 0.005}
-                fromRef={lightGroupRef as RefObject<Object3D | null>}
-              />
-            )}
-            <HandleTarget ref={lightGroupRef as RefObject<Object3D | null>}>
-              <primitive object={light} />
-              {isInScreen || (
-                <>
+      {!isInRoom && (
+        <>
+          <Platform lightTarget={lightTarget} />
+          <Hover
+            hoverTargetRef={sunHoverTargetRef as RefObject<Object3D | null>}
+          >
+            {(hovered) => (
+              <>
+                <StripedLineToCenter
+                  color={hovered ? "white" : "gray"}
+                  width={hovered ? 0.008 : 0.005}
+                  fromRef={lightGroupRef as RefObject<Object3D | null>}
+                />
+                <HandleTarget ref={lightGroupRef as RefObject<Object3D | null>}>
+                  <primitive object={light} />
                   <Handle
                     targetRef="from-context"
                     apply={(state) =>
@@ -170,15 +155,30 @@ export default function SceneContent({
                       color="grey"
                     />
                   </mesh>
-                </>
-              )}
-            </HandleTarget>
-          </>
-        )}
-      </Hover>
+                </HandleTarget>
+              </>
+            )}
+          </Hover>
+        </>
+      )}
+      <ambientLight intensity={1.5} />
+      {/* Warm up drei Text (troika) and Line (meshline) once at load to avoid first-time suspense blank */}
+      <group visible={false}>
+        <Text fontSize={0.001} position={[1000, 1000, 1000]}>
+          .
+        </Text>
+        <Line
+          points={[
+            [0, 0, 0],
+            [0, 0.001, 0],
+          ]}
+          color="white"
+          lineWidth={1}
+        />
+      </group>
 
       {Object.entries(objects).map(([id, obj]) => (
-        <CustomTransformHandles key={id} size={pivotSize} objectId={id}>
+        <CustomTransformHandles key={id} objectId={id}>
           <Hover>
             {(hovered) => {
               const baseColor =
@@ -207,7 +207,6 @@ export default function SceneContent({
         </CustomTransformHandles>
       ))}
 
-      <Platform lightTarget={lightTarget} />
       <group visible={isEditMode && selectedObjId != null}>
         {objStates.map((objState, i) => {
           const selectedObjStateIdx = selectedObjId

@@ -3,6 +3,7 @@ import Canvas from "~/canvas/Canvas";
 import GUI from "~/gui/GUI";
 import { useEditorStore, xrStore } from "~/stores";
 import { startCameraSync } from "~/supabase/cameraSubscription";
+import { getRoomData } from "~/supabase/roomData";
 import { startSceneSync } from "~/supabase/sceneSubscription";
 import "./index.css";
 
@@ -10,7 +11,7 @@ const projectId = 1;
 
 export default function App() {
   const isXRConnected = useEditorStore((s) => s.isXRConnected);
-  
+
   useEffect(() => {
     if (isXRConnected) {
       document.documentElement.style.fontSize = "150%";
@@ -29,6 +30,7 @@ export default function App() {
         useEditorStore.setState({ isXRConnected: false });
       }
     });
+    getRoomData(projectId);
     return () => {
       stopScene?.();
       stopCamera?.();
@@ -51,7 +53,7 @@ export default function App() {
 function EnterXRButtons() {
   return (
     <div className="absolute bottom-4 left-1/2 z-50 flex translate-x-[-50%] gap-4">
-      <OverlayButton label="Enter VR" onClick={() => xrStore.enterVR()} />
+      {/* <OverlayButton label="Enter VR" onClick={() => xrStore.enterVR()} /> */}
       <OverlayButton label="Enter AR" onClick={() => xrStore.enterAR()} />
     </div>
   );

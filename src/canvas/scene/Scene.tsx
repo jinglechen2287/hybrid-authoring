@@ -9,6 +9,7 @@ import {
   StateHandles,
   XRTransformGUI,
 } from "../interaction";
+import { MiniatureRoom } from "./MiniatureRoom";
 import SceneContent from "./SceneContent";
 
 export default function Scene({
@@ -21,7 +22,8 @@ export default function Scene({
   return (
     <group position={[0, 1, -0.5]}>
       <HandleTarget>
-        <SceneContent isInScreen={isInScreen} />
+        <SceneContent isInRoom={isInScreen} />
+        <MiniatureRoom />
         <SceneTransformHandles />
         <SceneRotateAndScaleHandles />
         <ModeToggleHandle />
