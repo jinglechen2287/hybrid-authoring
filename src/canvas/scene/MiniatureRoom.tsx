@@ -1,5 +1,5 @@
 import { Text } from "@react-three/drei";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { Matrix4, Quaternion, Shape, Vector3 } from "three";
 import { useRoomStore } from "~/stores";
 import type { RoomPlaneData } from "~/types";
@@ -45,14 +45,14 @@ export function MiniatureRoom() {
 
   return (
     <group scale={0.075} position={groupPosition} quaternion={groupQuaternion}>
-      {planes.map((data, i) => (
-        <StoredPlane key={i} data={data} />
+      {planes.map((data) => (
+        <StoredPlane key={data.id} data={data} />
       ))}
     </group>
   );
 }
 
-function StoredPlane({ data }: { data: RoomPlaneData }) {
+const StoredPlane = memo(function StoredPlane({ data }: { data: RoomPlaneData }) {
   const shape = useMemo(() => {
     const s = new Shape();
     if (data.polygon.length > 0) {
@@ -88,4 +88,4 @@ function StoredPlane({ data }: { data: RoomPlaneData }) {
       </mesh>
     </group>
   );
-}
+});

@@ -11,6 +11,7 @@ import {
 } from "@react-three/xr";
 import { useEffect, useMemo, useRef } from "react";
 import { BackSide, Matrix4, Quaternion, Vector3 } from "three";
+import { CAMERA_CONFIG, CANVAS_STYLE } from "~/constants";
 import { cameraStore, xrStore } from "~/stores";
 import { useRoomStore } from "~/stores/roomStore";
 import { patchRoomData } from "~/supabase/roomData";
@@ -22,9 +23,9 @@ export default function Canvas() {
   return (
     <R3FCanvas
       shadows="soft"
-      camera={{ position: [0, 1, -0.5] }}
+      camera={CAMERA_CONFIG}
       events={noEvents}
-      style={{ width: "100%", flexGrow: 1 }}
+      style={CANVAS_STYLE}
     >
       <XR store={xrStore}>
         <CanvasBg />

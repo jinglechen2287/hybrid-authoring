@@ -1,5 +1,6 @@
 import { useRef, type RefObject } from "react";
 import { Mesh, Object3D } from "three";
+import { EMISSIVE, SCALES } from "~/constants";
 import { useEditorStore } from "~/stores";
 import { Hover } from "./Hover";
 
@@ -23,10 +24,10 @@ export function ModeToggleHandle({
     <group position={position} onClick={onClick}>
       <Hover hoverTargetRef={meshRef as RefObject<Object3D | null>}>
         {(hovered) => (
-          <mesh ref={meshRef} scale={hovered ? scale * 0.025 : scale * 0.02}>
+          <mesh ref={meshRef} scale={hovered ? scale * SCALES.HANDLE_SMALL.hover : scale * SCALES.HANDLE_SMALL.default}>
             <sphereGeometry args={[1, 32, 32]} />
             <meshStandardMaterial
-              emissiveIntensity={hovered ? 0.3 : 0}
+              emissiveIntensity={hovered ? EMISSIVE.ON : EMISSIVE.OFF}
               emissive={mode === "edit" ? 0xffffff : "orange"}
               toneMapped={false}
               color={mode === "edit" ? "gray" : "orange"}

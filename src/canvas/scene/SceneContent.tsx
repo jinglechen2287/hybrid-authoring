@@ -19,8 +19,15 @@ import {
   type Object3DEventMap,
   type Vector3Tuple,
 } from "three";
+import {
+  EMISSIVE,
+  FONT_SIZES,
+  LINE_WIDTH,
+  SCALES,
+  getTransitionColor,
+} from "~/constants";
 import { useEditorStore, useSceneStore } from "~/stores";
-import type { SceneData, TriggerType } from "~/types";
+import type { SceneData } from "~/types";
 import { SunGeometry } from "../customGeometries";
 import { CustomTransformHandles, Hover } from "../interaction";
 import StripedLineToCenter from "./StripeLineToCenter";
@@ -30,20 +37,6 @@ export default function SceneContent({
 }: {
   isInRoom?: boolean;
 }) {
-  const getTransitionColor = (trigger: TriggerType) => {
-    switch (trigger) {
-      case "click":
-        return "orangered";
-      case "hoverStart":
-        return "skyblue";
-      case "hoverEnd":
-        return "green";
-      case "auto":
-        return "white";
-      default:
-        return "gray";
-    }
-  };
   const lightTarget = useMemo(
     () => new Object3D() as Object3D<Object3DEventMap & PointerEventsMap>,
     [],
@@ -105,6 +98,12 @@ export default function SceneContent({
     selectedObjId ? s.content[selectedObjId]?.type : undefined,
   );
 
+  // Memoized state ID to index map for O(1) lookups instead of O(n) findIndex
+  const stateIdMap = useMemo(
+    () => new Map(objStates.map((s, i) => [s.id, i])),
+    [objStates],
+  );
+
   return (
     <>
       {!isInRoom && (
@@ -117,7 +116,7 @@ export default function SceneContent({
               <>
                 <StripedLineToCenter
                   color={hovered ? "white" : "gray"}
-                  width={hovered ? 0.008 : 0.005}
+                  width={hovered ? LINE_WIDTH.HOVER : LINE_WIDTH.DEFAULT}
                   fromRef={lightGroupRef as RefObject<Object3D | null>}
                 />
                 <HandleTarget ref={lightGroupRef as RefObject<Object3D | null>}>
@@ -135,21 +134,21 @@ export default function SceneContent({
                   >
                     <mesh
                       ref={sunHoverTargetRef}
-                      scale={hovered ? 0.025 : 0.02}
+                      scale={hovered ? SCALES.HANDLE_SMALL.hover : SCALES.HANDLE_SMALL.default}
                     >
                       <sphereGeometry />
                       <meshStandardMaterial
-                        emissiveIntensity={hovered ? 0.3 : 0}
+                        emissiveIntensity={hovered ? EMISSIVE.ON : EMISSIVE.OFF}
                         emissive={0xffffff}
                         toneMapped={false}
                         color="grey"
                       />
                     </mesh>
                   </Handle>
-                  <mesh scale={(hovered ? 0.025 : 0.02) * 0.7}>
+                  <mesh scale={(hovered ? SCALES.HANDLE_SMALL.hover : SCALES.HANDLE_SMALL.default) * 0.7}>
                     <SunGeometry />
                     <meshStandardMaterial
-                      emissiveIntensity={hovered ? 0.3 : 0}
+                      emissiveIntensity={hovered ? EMISSIVE.ON : EMISSIVE.OFF}
                       emissive={0xffffff}
                       toneMapped={false}
                       color="grey"
@@ -190,12 +189,12 @@ export default function SceneContent({
               const isSel = selectedObjId === id;
               const color = isSel ? "skyblue" : baseColor;
               return (
-                <mesh castShadow receiveShadow scale={0.1}>
+                <mesh castShadow receiveShadow scale={SCALES.OBJECT_MESH}>
                   {obj.type === "sphere" && <sphereGeometry />}
                   {obj.type === "cube" && <boxGeometry />}
                   {obj.type === "cone" && <cylinderGeometry args={[0, 1]} />}
                   <meshStandardMaterial
-                    emissiveIntensity={hovered || isSel ? 0.3 : 0}
+                    emissiveIntensity={hovered || isSel ? EMISSIVE.ON : EMISSIVE.OFF}
                     emissive={isSel ? "skyblue" : 0xffffff}
                     toneMapped={false}
                     color={color}
@@ -221,7 +220,7 @@ export default function SceneContent({
                   rotation={objState.transform.rotation}
                   scale={
                     objState.transform.scale.map(
-                      (s) => s * 0.02,
+                      (s) => s * SCALES.GHOST_STATE_SCALE,
                     ) as Vector3Tuple
                   }
                   onClick={(e) => {
@@ -238,9 +237,7 @@ export default function SceneContent({
                           const objStates =
                             sceneData.content[selectedObjId]?.states;
                           if (!objStates || objStates.length === 0) return;
-                          const fromIdx = objStates.findIndex(
-                            (s) => s.id === connectingFromStateId,
-                          );
+                          const fromIdx = stateIdMap.get(connectingFromStateId) ?? -1;
                           const from = objStates[fromIdx];
                           if (!from) return;
                           from.transitionTo = objState.id;
@@ -260,7 +257,7 @@ export default function SceneContent({
                   )}
                   {selectedObjId == null && <sphereGeometry />}
                   <meshStandardMaterial
-                    emissiveIntensity={hovered ? 0.3 : 0}
+                    emissiveIntensity={hovered ? EMISSIVE.ON : EMISSIVE.OFF}
                     emissive={0xffffff}
                     toneMapped={false}
                     color={hovered ? "white" : "gray"}
@@ -276,7 +273,7 @@ export default function SceneContent({
       >
         {objStates.map((fromState, i) => {
           const toIndex = fromState.transitionTo
-            ? objStates.findIndex((s) => s.id === fromState.transitionTo)
+            ? (stateIdMap.get(fromState.transitionTo) ?? -1)
             : -1;
           if (toIndex < 0) return null;
           const toState = objStates[toIndex];
@@ -311,7 +308,7 @@ export default function SceneContent({
                 end={endArr}
                 mid={[midOffset.x, midOffset.y, midOffset.z]}
                 color={getTransitionColor(fromState.trigger)}
-                lineWidth={1}
+                lineWidth={LINE_WIDTH.CONNECTION}
                 dashed={false}
               />
             );
@@ -321,7 +318,7 @@ export default function SceneContent({
               key={`obj-state-line-${selectedObjId ?? "none"}-${i}-to-${toIndex}`}
               points={[startArr, endArr]}
               color={getTransitionColor(fromState.trigger)}
-              lineWidth={1}
+              lineWidth={LINE_WIDTH.CONNECTION}
               dashed={false}
             />
           );
@@ -343,7 +340,7 @@ export default function SceneContent({
               follow
             >
               <Text
-                fontSize={0.025}
+                fontSize={FONT_SIZES.STATE_LABEL}
                 color="white"
                 anchorX="center"
                 anchorY="middle"

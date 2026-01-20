@@ -1,6 +1,7 @@
 import { NumberInput as ArkNumberInput } from "@ark-ui/react/number-input";
 import { produce } from "immer";
 import type { ValueChangeDetails } from "node_modules/@ark-ui/react/dist/components/number-input/number-input";
+import { useCallback } from "react";
 import { useVec3Input } from "~/gui/contexts/Vec3InputContext";
 import { useEditorStore, useSceneStore } from "~/stores";
 import type { SceneData } from "~/types";
@@ -15,30 +16,33 @@ export default function NumberInput({
   const editorStore = useEditorStore();
   const selectedObjId = editorStore.selectedObjId;
   const objStateIdxMap = editorStore.objStateIdxMap;
-  if (!selectedObjId) return null;
   const index = ["X", "Y", "Z"].indexOf(coordinate);
-  const obj = sceneStore.content[selectedObjId];
-  if (!obj) return null;
-  const objStates = obj.states ?? [];
-  const objStateIdx = objStateIdxMap[selectedObjId] ?? 0;
+  const obj = selectedObjId ? sceneStore.content[selectedObjId] : undefined;
+  const objStates = obj?.states ?? [];
+  const objStateIdx = selectedObjId ? (objStateIdxMap[selectedObjId] ?? 0) : 0;
   const objState = objStates[objStateIdx] ?? objStates[0];
-  if (!objState) return null;
-  const value = objState.transform[type][index];
+  const value = objState?.transform[type][index];
 
-  const valueChangeHandler = (details: ValueChangeDetails) => {
-    useSceneStore.setState(
-      produce((sceneData: SceneData) => {
-        let value = parseFloat(details.value);
-        if (isNaN(value)) value = 0;
-        const target = sceneData.content[selectedObjId];
-        if (!target) return;
-        const objStates = target.states;
-        if (!objStates || objStates.length === 0) return;
-        const idx = Math.min(objStateIdx, objStates.length - 1);
-        objStates[idx].transform[type][index] = value;
-      }),
-    );
-  };
+  const valueChangeHandler = useCallback(
+    (details: ValueChangeDetails) => {
+      if (!selectedObjId) return;
+      useSceneStore.setState(
+        produce((sceneData: SceneData) => {
+          let value = parseFloat(details.value);
+          if (isNaN(value)) value = 0;
+          const target = sceneData.content[selectedObjId];
+          if (!target) return;
+          const objStates = target.states;
+          if (!objStates || objStates.length === 0) return;
+          const idx = Math.min(objStateIdx, objStates.length - 1);
+          objStates[idx].transform[type][index] = value;
+        }),
+      );
+    },
+    [selectedObjId, objStateIdx, type, index],
+  );
+
+  if (!selectedObjId || !obj || !objState || value === undefined) return null;
 
   return (
     <ArkNumberInput.Root

@@ -1,7 +1,6 @@
-import { v4 as uuidv4 } from "uuid";
 import { useEditorStore, useSceneStore } from "~/stores";
 
-export const clientId = uuidv4();
+export const clientId = crypto.randomUUID();
 
 export function pickDBFields() {
   const scene = useSceneStore.getState();

@@ -14,9 +14,9 @@ export function Hover({
   const [hovered, setHovered] = useState(false);
   useHover(
     hoverTargetRef ?? (ref as RefObject<Object3D | null>),
-    (hoverd, e) => {
-      setHovered(hoverd);
-      if (hoverd) {
+    (hovered, e) => {
+      setHovered(hovered);
+      if (hovered) {
         vibrateOnEvent(e);
       }
     }

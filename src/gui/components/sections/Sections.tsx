@@ -1,9 +1,10 @@
+import { memo } from "react";
 import BehaviorSection from "./BehaviorSection";
 import SelectionSection from "./SelectionSection";
 import StatesSection from "./StatesSection";
 import TransformSection from "./TransformSection";
 
-export default function Sections() {
+const Sections = memo(function Sections() {
   return (
     <div className="flex flex-col gap-8">
       <SelectionSection />
@@ -12,4 +13,6 @@ export default function Sections() {
       <BehaviorSection />
     </div>
   );
-}
+});
+
+export default Sections;

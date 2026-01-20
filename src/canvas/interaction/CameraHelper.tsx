@@ -4,6 +4,7 @@ import { Handle, HandleTarget } from "@react-three/handle";
 import { IfInSessionMode } from "@react-three/xr";
 import { useMemo, useRef, type RefObject } from "react";
 import { Mesh, Object3D, type Object3DEventMap } from "three";
+import { EMISSIVE, SCALES } from "~/constants";
 import { cameraStore } from "~/stores";
 import { CameraGeometry } from "../customGeometries";
 import { Hover } from "./Hover";
@@ -44,10 +45,10 @@ export function CameraHelper() {
                 multitouch={false}
                 rotate={false}
               >
-                <mesh ref={hoverTargetRef} scale={hovered ? 0.035 : 0.03}>
+                <mesh ref={hoverTargetRef} scale={hovered ? SCALES.HANDLE_MEDIUM.hover : SCALES.HANDLE_MEDIUM.default}>
                   <sphereGeometry />
                   <meshStandardMaterial
-                    emissiveIntensity={hovered ? 0.3 : 0}
+                    emissiveIntensity={hovered ? EMISSIVE.ON : EMISSIVE.OFF}
                     emissive={0xffffff}
                     toneMapped={false}
                     color="grey"
@@ -55,10 +56,10 @@ export function CameraHelper() {
                 </mesh>
               </Handle>
               <group scale-x={16 / 9} rotation-y={Math.PI}>
-                <mesh position-z={0.1} scale={hovered ? 0.025 : 0.02}>
+                <mesh position-z={0.1} scale={hovered ? SCALES.HANDLE_SMALL.hover : SCALES.HANDLE_SMALL.default}>
                   <CameraGeometry />
                   <meshStandardMaterial
-                    emissiveIntensity={hovered ? 0.3 : 0}
+                    emissiveIntensity={hovered ? EMISSIVE.ON : EMISSIVE.OFF}
                     emissive={0xffffff}
                     toneMapped={false}
                     color="grey"

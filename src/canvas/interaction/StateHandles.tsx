@@ -1,11 +1,18 @@
 import { produce } from "immer";
 import { Billboard, Text } from "@react-three/drei";
-import { useRef, type RefObject } from "react";
-import type { Vector3Tuple } from "three";
+import { type RefObject, useRef } from "react";
 import { Mesh, Object3D } from "three";
-import { v4 as uuidv4 } from "uuid";
+import {
+  EMISSIVE,
+  FONT_SIZES,
+  SCALES,
+  TRIGGER_COLORS,
+  TRIGGER_ORDER,
+} from "~/constants";
 import { useEditorStore, useSceneStore } from "~/stores";
 import type { SceneData, TriggerType } from "~/types";
+import { playConfirmSound } from "~/utils/audio";
+import { addObjState, removeObjState, getObjStateIdx } from "~/utils/stateOperations";
 import { Hover } from "./Hover";
 
 export function StateHandles({
@@ -15,13 +22,9 @@ export function StateHandles({
   position?: [number, number, number];
   scale?: number;
 }) {
-  const addRef = useRef<Mesh>(null);
-  const removeRef = useRef<Mesh>(null);
-  const connectRef = useRef<Mesh>(null);
-  const confirmAudioRef = useRef<HTMLAudioElement | null>(null);
-  if (confirmAudioRef.current == null) {
-    confirmAudioRef.current = new Audio("/confirm.wav");
-  }
+  const addRef = useRef<Mesh | null>(null);
+  const removeRef = useRef<Mesh | null>(null);
+  const connectRef = useRef<Mesh | null>(null);
   const selectedObjId = useEditorStore((s) => s.selectedObjId);
   const objStateIdxMap = useEditorStore((s) => s.objStateIdxMap);
   const setObjStateIdxMap = useEditorStore((s) => s.setObjStateIdxMap);
@@ -36,66 +39,20 @@ export function StateHandles({
   const states = useSceneStore((s) =>
     selectedObjId ? (s.content[selectedObjId]?.states ?? EMPTY) : EMPTY,
   );
-  const selectedObjStateIdx = selectedObjId
-    ? (objStateIdxMap[selectedObjId] ?? 0)
-    : 0;
+  const selectedObjStateIdx = getObjStateIdx(objStateIdxMap, selectedObjId);
 
   const onAdd = () => {
     if (!selectedObjId) return;
-    useSceneStore.setState(
-      produce((sceneData: SceneData) => {
-        const objStates = sceneData.content[selectedObjId]?.states;
-        if (!objStates || objStates.length === 0) return;
-        const base =
-          objStates[selectedObjStateIdx] ?? objStates[objStates.length - 1];
-        const newState = {
-          id: uuidv4(),
-          transform: {
-            position: [...base.transform.position] as Vector3Tuple,
-            rotation: [...base.transform.rotation] as Vector3Tuple,
-            scale: [...base.transform.scale] as Vector3Tuple,
-          },
-          trigger: "" as TriggerType,
-          transitionTo: "",
-        };
-        objStates.splice(selectedObjStateIdx + 1, 0, newState);
-      }),
-    );
-    setObjStateIdxMap(selectedObjStateIdx + 1);
-    try {
-      const a = confirmAudioRef.current;
-      if (a) {
-        a.currentTime = 0;
-        void a.play();
-      }
-    } catch {
-      console.error("Failed to play confirm audio");
-    }
+    const newIdx = addObjState(selectedObjId, selectedObjStateIdx);
+    setObjStateIdxMap(newIdx);
+    playConfirmSound();
   };
 
   const onRemove = () => {
     if (!selectedObjId) return;
-    let nextObjStateIdx = selectedObjStateIdx;
-    useSceneStore.setState(
-      produce((sceneData: SceneData) => {
-        const objStates = sceneData.content[selectedObjId]?.states;
-        if (!objStates || objStates.length <= 1) return;
-        objStates.splice(selectedObjStateIdx, 1);
-        if (nextObjStateIdx >= objStates.length) {
-          nextObjStateIdx = objStates.length - 1;
-        }
-      }),
-    );
-    setObjStateIdxMap(nextObjStateIdx);
-    try {
-      const a = confirmAudioRef.current;
-      if (a) {
-        a.currentTime = 0;
-        void a.play();
-      }
-    } catch {
-      console.error("Failed to play confirm audio");
-    }
+    const newIdx = removeObjState(selectedObjId, selectedObjStateIdx);
+    setObjStateIdxMap(newIdx);
+    playConfirmSound();
   };
 
   const onStartConnect = () => {
@@ -105,15 +62,8 @@ export function StateHandles({
     if (!isConnecting) {
       setConnectingFrom(selectedObjId, fromState.id);
     } else {
-      const order: TriggerType[] = [
-        "click",
-        "hoverStart",
-        "hoverEnd",
-        "auto",
-        "",
-      ];
-      const idx = order.indexOf(connectingTrigger);
-      const next = order[(idx + 1) % order.length];
+      const idx = TRIGGER_ORDER.indexOf(connectingTrigger);
+      const next = TRIGGER_ORDER[(idx + 1) % TRIGGER_ORDER.length];
       if (next === "") {
         // Exit connect mode and remove existing transition on the from-state
         if (connectingFromObjId && connectingFromStateId) {
@@ -137,15 +87,7 @@ export function StateHandles({
         setConnectingTrigger(next);
       }
     }
-    try {
-      const a = confirmAudioRef.current;
-      if (a) {
-        a.currentTime = 0;
-        void a.play();
-      }
-    } catch {
-      console.error("Failed to play confirm audio");
-    }
+    playConfirmSound();
   };
 
   return (
@@ -154,14 +96,14 @@ export function StateHandles({
         {(hovered) => (
           <group
             ref={addRef}
-            scale={hovered ? scale * 0.036 : scale * 0.032}
+            scale={hovered ? scale * SCALES.STATE_HANDLE.hover : scale * SCALES.STATE_HANDLE.default}
             rotation-z={Math.PI / 2}
             onClick={onAdd}
           >
             <mesh scale={[1, 0.4, 0.4]}>
               <boxGeometry />
               <meshStandardMaterial
-                emissiveIntensity={hovered ? 0.3 : 0}
+                emissiveIntensity={hovered ? EMISSIVE.ON : EMISSIVE.OFF}
                 emissive={0xffffff}
                 toneMapped={false}
                 color={"lightgreen"}
@@ -170,7 +112,7 @@ export function StateHandles({
             <mesh scale={[1, 0.4, 0.4]} rotation-y={Math.PI / 2}>
               <boxGeometry />
               <meshStandardMaterial
-                emissiveIntensity={hovered ? 0.3 : 0}
+                emissiveIntensity={hovered ? EMISSIVE.ON : EMISSIVE.OFF}
                 emissive={0xffffff}
                 toneMapped={false}
                 color={"lightgreen"}
@@ -184,13 +126,13 @@ export function StateHandles({
           <group
             ref={removeRef}
             position-z={0.07}
-            scale={hovered ? scale * 0.036 : scale * 0.032}
+            scale={hovered ? scale * SCALES.STATE_HANDLE.hover : scale * SCALES.STATE_HANDLE.default}
             onClick={onRemove}
           >
             <mesh scale={[1, 0.4, 0.4]} rotation-y={Math.PI / 2}>
               <boxGeometry />
               <meshStandardMaterial
-                emissiveIntensity={hovered ? 0.3 : 0}
+                emissiveIntensity={hovered ? EMISSIVE.ON : EMISSIVE.OFF}
                 emissive={0xffffff}
                 toneMapped={false}
                 color={states.length <= 1 ? "gray" : "maroon"}
@@ -204,13 +146,13 @@ export function StateHandles({
           <group
             ref={connectRef}
             position-z={0.14}
-            scale={hovered ? scale * 0.042 : scale * 0.038}
+            scale={hovered ? scale * SCALES.CONNECT_HANDLE.hover : scale * SCALES.CONNECT_HANDLE.default}
             onClick={onStartConnect}
           >
             <mesh>
               <icosahedronGeometry args={[0.5]} />
               <meshStandardMaterial
-                emissiveIntensity={hovered ? 0.3 : 0}
+                emissiveIntensity={hovered ? EMISSIVE.ON : EMISSIVE.OFF}
                 emissive={0xffffff}
                 toneMapped={false}
                 color={isConnecting ? "deepskyblue" : "gray"}
@@ -219,7 +161,7 @@ export function StateHandles({
             {isConnecting && (
               <Billboard position={[0, 0.9, 0]} follow>
                 <Text
-                  fontSize={0.5}
+                  fontSize={FONT_SIZES.TRIGGER_INDICATOR}
                   color="white"
                   anchorX="center"
                   anchorY="bottom"
@@ -235,15 +177,7 @@ export function StateHandles({
                 <boxGeometry />
                 <meshStandardMaterial
                   toneMapped={false}
-                  color={
-                    connectingTrigger === "click"
-                      ? "orangered"
-                      : connectingTrigger === "hoverStart"
-                        ? "skyblue"
-                        : connectingTrigger === "hoverEnd"
-                          ? "green"
-                          : "white"
-                  }
+                  color={TRIGGER_COLORS[connectingTrigger] || TRIGGER_COLORS.auto}
                 />
               </mesh>
             )}

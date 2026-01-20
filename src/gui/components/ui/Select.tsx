@@ -4,6 +4,7 @@ import {
   createListCollection,
 } from "@ark-ui/react/select";
 import { ChevronDownIcon } from "lucide-react";
+import { useMemo } from "react";
 
 export default function Select({
   label,
@@ -18,14 +19,22 @@ export default function Select({
   value?: string;
   onValueChange?: (value: string) => void;
 }) {
-  const normalized = items.map((i) =>
-    typeof i === "string" ? { label: i, value: i } : i,
+  const normalized = useMemo(
+    () => items.map((i) => (typeof i === "string" ? { label: i, value: i } : i)),
+    [items],
   );
-  const valueToLabel = new Map(normalized.map((i) => [i.value, i.label]));
-  const collection = createListCollection({
-    items: normalized.map((i) => i.value),
-    itemToString: (value) => valueToLabel.get(String(value)) ?? String(value),
-  });
+  const valueToLabel = useMemo(
+    () => new Map(normalized.map((i) => [i.value, i.label])),
+    [normalized],
+  );
+  const collection = useMemo(
+    () =>
+      createListCollection({
+        items: normalized.map((i) => i.value),
+        itemToString: (value) => valueToLabel.get(String(value)) ?? String(value),
+      }),
+    [normalized, valueToLabel],
+  );
 
   return (
     <ArkSelect.Root

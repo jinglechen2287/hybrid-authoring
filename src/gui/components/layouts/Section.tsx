@@ -1,4 +1,6 @@
-export default function Section({ title, actions, children }: { title: string; actions?: React.ReactNode; children: React.ReactNode }) {
+import { memo } from "react";
+
+const Section = memo(function Section({ title, actions, children }: { title: string; actions?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -10,4 +12,6 @@ export default function Section({ title, actions, children }: { title: string; a
       </div>
     </div>
   );
-}
+});
+
+export default Section;

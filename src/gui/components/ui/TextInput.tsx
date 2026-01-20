@@ -1,8 +1,9 @@
 import { useEditorStore, useSceneStore } from "~/stores";
 import { produce } from "immer";
+import { memo } from "react";
 import type { SceneData } from "~/types";
 
-export function TextInput({
+export const TextInput = memo(function TextInput({
   value,
   onChange,
 }: {
@@ -23,7 +24,7 @@ export function TextInput({
       </div>
     </div>
   );
-}
+});
 
 export function NameInput() {
   const selectedObjId = useEditorStore((s) => s.selectedObjId);

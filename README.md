@@ -3,4 +3,7 @@
 - https://freesound.org/people/ironcross32/sounds/582897/ 
 
 ## TODO
-- consolidate add and remove state handlers
+- Allow user to select object state using the 2D UI component in XR.
+
+## User Test
+- Demo + Try it themselves

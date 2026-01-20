@@ -1,24 +1,15 @@
 import debounce from "lodash.debounce";
 import { cameraStore } from "~/stores";
 import type { CameraData, ProjectsData } from "~/types";
+import { isValidCameraData } from "~/utils/validation";
 import { supabase } from "./supabase";
 import { clientId, stringify } from "./util";
 
+// Re-export for backwards compatibility
+export { isValidCameraData } from "~/utils/validation";
+
 // Prevent feedback loops: when applying remote data to the camera store, skip store->DB sync
 let isApplyingRemoteCameraUpdate = false;
-
-function isValidCameraData(value: unknown): value is CameraData {
-  if (!value || typeof value !== "object") return false;
-  const cam = value as Partial<CameraData>;
-  return (
-    typeof cam.distance === "number" &&
-    typeof cam.yaw === "number" &&
-    typeof cam.pitch === "number" &&
-    Array.isArray(cam.origin) &&
-    cam.origin.length === 3 &&
-    cam.origin.every((n) => typeof n === "number")
-  );
-}
 
 function setCamera(row: ProjectsData) {
   const incoming = row.camera;

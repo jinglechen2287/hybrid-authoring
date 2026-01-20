@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, memo } from "react";
 import Canvas from "~/canvas/Canvas";
 import GUI from "~/gui/GUI";
 import { useEditorStore, xrStore } from "~/stores";
@@ -73,7 +73,7 @@ function ModeToggleButton() {
   );
 }
 
-function OverlayButton({
+const OverlayButton = memo(function OverlayButton({
   label,
   onClick,
 }: {
@@ -88,4 +88,4 @@ function OverlayButton({
       {label}
     </button>
   );
-}
+});

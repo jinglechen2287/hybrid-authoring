@@ -1,5 +1,6 @@
 import { RoundedBox } from "@react-three/drei";
 import { Handle, HandleTarget } from "@react-three/handle";
+import { EMISSIVE, SCALES } from "~/constants";
 import { useEditorStore } from "~/stores";
 import { RotateGeometry } from "../customGeometries";
 import {
@@ -51,10 +52,10 @@ function SceneTransformHandles() {
             position-x={0.35}
             position-y={-0.05}
             args={[0.2, 0.2, 1.2]}
-            scale={hovered ? 0.125 : 0.1}
+            scale={hovered ? SCALES.TRANSFORM_HANDLE.hover : SCALES.TRANSFORM_HANDLE.default}
           >
             <meshStandardMaterial
-              emissiveIntensity={hovered ? 0.3 : 0}
+              emissiveIntensity={hovered ? EMISSIVE.ON : EMISSIVE.OFF}
               emissive={0xffffff}
               toneMapped={false}
               color="grey"
@@ -82,11 +83,11 @@ function SceneRotateAndScaleHandles() {
             position-z={0.335}
             position-y={-0.05}
             rotation-y={Math.PI}
-            scale={hovered ? 0.04 : 0.03}
+            scale={hovered ? SCALES.ROTATE_SCALE_HANDLE.hover : SCALES.ROTATE_SCALE_HANDLE.default}
           >
             <RotateGeometry />
             <meshStandardMaterial
-              emissiveIntensity={hovered ? 0.3 : 0}
+              emissiveIntensity={hovered ? EMISSIVE.ON : EMISSIVE.OFF}
               emissive={0xffffff}
               toneMapped={false}
               color="grey"

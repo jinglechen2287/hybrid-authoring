@@ -9,12 +9,22 @@ import {
   type RefObject,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
 } from "react";
 import { Group, Object3D, type Vector3Tuple } from "three";
 import { useEditorStore, useSceneStore } from "~/stores";
 import type { ObjState, SceneData, Transform, TriggerType } from "~/types";
 import { vibrateOnEvent } from "./vibrateOnEvent";
+
+// Module-level lerp utilities for performance (avoids creating functions per frame)
+function lerp(x: number, y: number, t: number): number {
+  return x + (y - x) * t;
+}
+
+function lerpVec3(a: Vector3Tuple, b: Vector3Tuple, t: number): Vector3Tuple {
+  return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+}
 
 export function CustomTransformHandles({
   objectId,
@@ -68,7 +78,27 @@ export function CustomTransformHandles({
       unsubScene();
       unsubEditor();
     };
-  }, [isInXR, objectId, mode]);
+    // Note: mode is intentionally excluded - subscriptions handle state changes internally
+  }, [isInXR, objectId]);
+
+  // Refresh transforms after mode changes and DOM updates
+  // This is needed because the store subscription fires before React re-renders,
+  // so when switching from play to edit mode, the old element gets updated but
+  // the new element (PivotHandles) mounts with default transforms
+  useLayoutEffect(() => {
+    if (targetRef.current == null) return;
+    const { selectedObjId, objStateIdxMap } = useEditorStore.getState();
+    const sceneState = useSceneStore.getState();
+    const objStates = sceneState.content[objectId]?.states ?? [];
+    const objStateIdx =
+      selectedObjId === objectId ? (objStateIdxMap[objectId] ?? 0) : 0;
+    const objState = Array.isArray(objStates) ? objStates[objStateIdx] : undefined;
+    if (objState) {
+      targetRef.current.position.fromArray(objState.transform.position);
+      targetRef.current.rotation.fromArray(objState.transform.rotation);
+      targetRef.current.scale.fromArray(objState.transform.scale);
+    }
+  }, [mode, objectId]);
 
   // Play-mode: trigger-driven transitions with interpolation
   useFrame(() => {
@@ -99,12 +129,6 @@ export function CustomTransformHandles({
     const active = activeLerpRef.current;
     if (active) {
       const progress = Math.min(1, (now - active.start) / active.duration);
-      const lerp = (x: number, y: number, t: number) => x + (y - x) * t;
-      const lerpVec3 = (a: Vector3Tuple, b: Vector3Tuple, t: number): Vector3Tuple => [
-        lerp(a[0], b[0], t),
-        lerp(a[1], b[1], t),
-        lerp(a[2], b[2], t),
-      ];
       const pos = lerpVec3(active.from.position, active.to.position, progress);
       const rot = lerpVec3(active.from.rotation, active.to.rotation, progress);
       const scale = lerpVec3(active.from.scale, active.to.scale, progress);

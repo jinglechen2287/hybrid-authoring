@@ -1,3 +1,3 @@
 import { createXRStore } from "@react-three/xr";
 
-export const xrStore = createXRStore({ emulate: { syntheticEnvironment: false } })
+export const xrStore = createXRStore({ emulate: { syntheticEnvironment: false } });

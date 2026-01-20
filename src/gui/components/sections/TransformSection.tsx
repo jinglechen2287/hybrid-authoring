@@ -1,8 +1,9 @@
+import { memo } from "react";
 import Vec3InputContextProvider from "~/gui/contexts/Vec3InputContextProvider";
 import Section from "../layouts/Section";
 import Vec3Input from "../layouts/Vec3Input";
 
-export default function TransformSection() {
+const TransformSection = memo(function TransformSection() {
   return (
     <Section title="Transform">
       <Vec3InputContextProvider type="position">
@@ -16,4 +17,6 @@ export default function TransformSection() {
       </Vec3InputContextProvider>
     </Section>
   );
-}
+});
+
+export default TransformSection;

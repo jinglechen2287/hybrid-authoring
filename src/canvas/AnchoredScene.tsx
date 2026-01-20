@@ -1,3 +1,4 @@
+import type { XRAnchorOptions } from "@pmndrs/xr";
 import { useXR, useXRAnchor, useXRHitTest, XRSpace } from "@react-three/xr";
 import { useEffect, useRef } from "react";
 import { Group, Quaternion, Vector3 } from "three";
@@ -25,8 +26,7 @@ export function AnchoredScene() {
   return <PlacementMode requestAnchor={requestAnchor} />;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type RequestAnchorFn = (options: any) => Promise<any>;
+type RequestAnchorFn = (options: XRAnchorOptions) => Promise<XRAnchor | undefined>;
 
 function PlacementMode({
   requestAnchor,

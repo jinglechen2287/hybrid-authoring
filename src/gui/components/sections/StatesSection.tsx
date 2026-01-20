@@ -1,63 +1,30 @@
-import { produce } from "immer";
 import { Minus, Plus } from "lucide-react";
-import { useMemo } from "react";
-import { v4 as uuidv4 } from "uuid";
+import { memo, useMemo } from "react";
 import { useEditorStore, useSceneStore } from "~/stores";
-import type { SceneData, TriggerType } from "~/types";
+import { addObjState, removeObjState, getObjStateIdx, getStateLabel } from "~/utils/stateOperations";
 import Section from "../layouts/Section";
-import type { Vector3Tuple } from "three";
 
-export default function StatesSection() {
+const StatesSection = memo(function StatesSection() {
   const selectedObjId = useEditorStore((s) => s.selectedObjId);
   const objStateIdxMap = useEditorStore((s) => s.objStateIdxMap);
   const setObjStateIdxMap = useEditorStore((s) => s.setObjStateIdxMap);
   const objStates = useSceneStore((s) =>
     selectedObjId ? (s.content[selectedObjId]?.states ?? []) : [],
   );
-  const selectedObjStateIdx = selectedObjId
-    ? (objStateIdxMap[selectedObjId] ?? 0)
-    : 0;
+  const selectedObjStateIdx = getObjStateIdx(objStateIdxMap, selectedObjId);
 
   const canAdd = selectedObjId != null;
 
   const onAddObjState = () => {
     if (!selectedObjId) return;
-    useSceneStore.setState(
-      produce((sceneData: SceneData) => {
-        const objStates = sceneData.content[selectedObjId]?.states;
-        if (!objStates || objStates.length === 0) return;
-        const base =
-          objStates[selectedObjStateIdx] ?? objStates[objStates.length - 1];
-        const newState = {
-          id: uuidv4(),
-          transform: {
-            position: [...base.transform.position] as Vector3Tuple,
-            rotation: [...base.transform.rotation] as Vector3Tuple,
-            scale: [...base.transform.scale] as Vector3Tuple,
-          },
-          trigger: "" as TriggerType,
-          transitionTo: "",
-        };
-        objStates.splice(selectedObjStateIdx + 1, 0, newState);
-      }),
-    );
-    setObjStateIdxMap(selectedObjStateIdx + 1);
+    const newIdx = addObjState(selectedObjId, selectedObjStateIdx);
+    setObjStateIdxMap(newIdx);
   };
 
   const onRemoveObjState = () => {
     if (!selectedObjId) return;
-    let nextObjStateIdx = selectedObjStateIdx;
-    useSceneStore.setState(
-      produce((sceneData: SceneData) => {
-        const objStates = sceneData.content[selectedObjId]?.states;
-        if (!objStates || objStates.length <= 1) return;
-        objStates.splice(selectedObjStateIdx, 1);
-        if (nextObjStateIdx >= objStates.length) {
-          nextObjStateIdx = objStates.length - 1;
-        }
-      }),
-    );
-    setObjStateIdxMap(nextObjStateIdx);
+    const newIdx = removeObjState(selectedObjId, selectedObjStateIdx);
+    setObjStateIdxMap(newIdx);
   };
 
   const onSelectObjState = (newObjStateIdx: number) => {
@@ -65,11 +32,6 @@ export default function StatesSection() {
   };
 
   const items = useMemo(() => objStates ?? [], [objStates]);
-
-  const getStateLabel = (index: number) => {
-    if (index === 0) return "Base State";
-    return `State ${index}`;
-  };
 
   return (
     <Section
@@ -94,9 +56,9 @@ export default function StatesSection() {
       }
     >
       <div className="flex flex-col gap-2">
-        {items.map((_, i) => (
+        {items.map((state, i) => (
           <button
-            key={i}
+            key={state.id}
             className={
               "w-full rounded-md px-3 py-2 text-left text-sm transition-colors " +
               (i === selectedObjStateIdx
@@ -111,4 +73,6 @@ export default function StatesSection() {
       </div>
     </Section>
   );
-}
+});
+
+export default StatesSection;
