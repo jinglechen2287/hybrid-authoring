@@ -11,7 +11,6 @@ import {
 } from "@react-three/xr";
 import { useEffect, useMemo, useRef } from "react";
 import { BackSide, Matrix4, Quaternion, Vector3 } from "three";
-import { CAMERA_CONFIG, CANVAS_STYLE } from "~/constants";
 import { cameraStore, xrStore } from "~/stores";
 import { useRoomStore } from "~/stores/roomStore";
 import { patchRoomData } from "~/supabase/roomData";
@@ -23,9 +22,11 @@ export default function Canvas() {
   return (
     <R3FCanvas
       shadows="soft"
-      camera={CAMERA_CONFIG}
       events={noEvents}
-      style={CANVAS_STYLE}
+      style={{
+        width: "100%",
+        flexGrow: 1,
+      }}
     >
       <XR store={xrStore}>
         <CanvasBg />
@@ -137,28 +138,6 @@ function Room() {
         <group matrix={contentMatrix} matrixAutoUpdate={false}>
           <SceneContent isInRoom={true} />
         </group>
-        {/* {xrPlanes.map((plane, index) => (
-          <XRSpace key={index} space={plane.planeSpace}>
-            <XRPlaneModel plane={plane}>
-              <meshBasicMaterial
-                color="blue"
-                transparent
-                opacity={0.4}
-                side={2}
-              />
-            </XRPlaneModel>
-            <Text
-              position={[0, 0.1, 0]}
-              rotation={[Math.PI / 2, 0, 0]}
-              fontSize={0.2}
-              color="white"
-              anchorX="center"
-              anchorY="middle"
-            >
-              {plane.semanticLabel || "unknown"}
-            </Text>
-          </XRSpace>
-        ))} */}
       </>
     );
   }

@@ -78,21 +78,6 @@ export function getTransitionColor(trigger: TriggerType): string {
 }
 
 // ============================================================================
-// CANVAS CONFIGURATION
-// ============================================================================
-
-/** Default camera configuration for the main canvas */
-export const CAMERA_CONFIG = {
-  position: [0, 1, -0.5] as [number, number, number],
-} as const;
-
-/** Default style for the main canvas */
-export const CANVAS_STYLE = {
-  width: "100%",
-  flexGrow: 1,
-} as const;
-
-// ============================================================================
 // ANIMATION TIMING
 // ============================================================================
 

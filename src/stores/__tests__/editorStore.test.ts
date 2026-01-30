@@ -95,19 +95,6 @@ describe('editorStore', () => {
       expect(state.objStateIdxMap).toEqual({ obj1: 3, obj2: 0 });
     });
 
-    it('updates all objects uniformly in play mode', () => {
-      useEditorStore.setState({
-        mode: 'play',
-        selectedObjId: 'obj1',
-        objStateIdxMap: { obj1: 0, obj2: 0, obj3: 1 },
-      });
-
-      useEditorStore.getState().setObjStateIdxMap(2);
-
-      const state = useEditorStore.getState();
-      expect(state.objStateIdxMap).toEqual({ obj1: 2, obj2: 2, obj3: 2 });
-    });
-
     it('does nothing in edit mode if no object is selected', () => {
       useEditorStore.setState({
         mode: 'edit',

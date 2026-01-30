@@ -14,14 +14,9 @@ export function ModeToggleHandle({
   const meshRef = useRef<Mesh>(null);
   const mode = useEditorStore((s) => s.mode);
   const toggleMode = useEditorStore((s) => s.toggleMode);
-  const onClick = () => {
-    toggleMode();
-    useEditorStore.getState().setObjStateIdxMap(0);
-    useEditorStore.getState().setSelectedObjId(undefined);
-  };
 
   return (
-    <group position={position} onClick={onClick}>
+    <group position={position} onClick={toggleMode}>
       <Hover hoverTargetRef={meshRef as RefObject<Object3D | null>}>
         {(hovered) => (
           <mesh ref={meshRef} scale={hovered ? scale * SCALES.HANDLE_SMALL.hover : scale * SCALES.HANDLE_SMALL.default}>

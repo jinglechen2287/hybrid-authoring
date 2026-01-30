@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import type { EditorStore, TriggerType } from "~/types";
+import { TRIGGER_ORDER } from "~/constants";
+import type { EditorStore } from "~/types";
 
 export const useEditorStore = create<EditorStore>((set) => ({
   mode: "edit",
@@ -22,6 +23,7 @@ export const useEditorStore = create<EditorStore>((set) => ({
       }
       return {
         mode: nextMode,
+        selectedObjId: undefined,
         objStateIdxMap: nextObjStateIdxMap,
       };
     }),
@@ -32,28 +34,18 @@ export const useEditorStore = create<EditorStore>((set) => ({
         return { selectedObjId: undefined };
       }
       const hasEntry = state.objStateIdxMap[value] ? true : false;
+      // If the object is not in the map, add it with index 0
+      const newObjStateIdxMap = hasEntry
+        ? state.objStateIdxMap
+        : { ...state.objStateIdxMap, [value]: 0 };
       return {
         selectedObjId: value,
-        objStateIdxMap: hasEntry
-          ? state.objStateIdxMap
-          : { ...state.objStateIdxMap, [value]: 0 },
+        objStateIdxMap: newObjStateIdxMap,
       };
     }),
   objStateIdxMap: {},
   setObjStateIdxMap: (value) =>
     set((state) => {
-      if (state.mode === "play") {
-        const keys = Object.keys(state.objStateIdxMap);
-        if (keys.length === 0) {
-          if (state.selectedObjId) {
-            return { objStateIdxMap: { [state.selectedObjId]: value } };
-          }
-          return { objStateIdxMap: {} };
-        }
-        const unified: Record<string, number> = {};
-        for (const k of keys) unified[k] = value;
-        return { objStateIdxMap: unified };
-      }
       if (!state.selectedObjId) return {};
       return {
         objStateIdxMap: {
@@ -63,7 +55,10 @@ export const useEditorStore = create<EditorStore>((set) => ({
       };
     }),
   isHybrid: false,
+// --------- Connect-mode for creating transitions between states in canvas ---------
   isConnecting: false,
+  connectingFromObjId: undefined,
+  connectingFromStateId: undefined,
   connectingTrigger: "click",
   setConnectingFrom: (objId, stateId) =>
     set(() => ({
@@ -74,15 +69,8 @@ export const useEditorStore = create<EditorStore>((set) => ({
     })),
   cycleConnectingTrigger: () =>
     set((state) => {
-      const order: TriggerType[] = [
-        "click",
-        "hoverStart",
-        "hoverEnd",
-        "auto",
-        "",
-      ];
-      const idx = order.indexOf(state.connectingTrigger);
-      const next = order[(idx + 1) % order.length];
+      const idx = TRIGGER_ORDER.indexOf(state.connectingTrigger);
+      const next = TRIGGER_ORDER[(idx + 1) % TRIGGER_ORDER.length];
       if (next === "") {
         return {
           connectingTrigger: "",
