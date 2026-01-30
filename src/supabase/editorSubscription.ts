@@ -1,54 +1,54 @@
 import debounce from "lodash.debounce";
-import { useSceneStore } from "~/stores";
+import { useEditorStore } from "~/stores";
 import type { ProjectsData } from "~/types";
-import { isValidSceneData } from "~/utils/validation";
+import { isValidEditorData } from "~/utils/validation";
 import { supabase } from "./supabase";
 import {
   getIsApplyingRemoteUpdate,
   withRemoteUpdateFlag,
 } from "./syncState";
-import { clientId, pickSceneFields, stringify } from "./util";
+import { clientId, pickEditorFields, stringify } from "./util";
 
-function applySceneData(row: ProjectsData) {
-  const incoming = row.scene;
-  if (!isValidSceneData(incoming)) return;
+function applyEditorData(row: ProjectsData) {
+  const incoming = row.editor;
+  if (!isValidEditorData(incoming)) return;
 
   withRemoteUpdateFlag(() => {
-    useSceneStore.setState((prev) => ({
-      lightPosition: incoming.lightPosition ?? prev.lightPosition,
-      content: incoming.content ?? prev.content,
+    useEditorStore.setState((prev) => ({
+      mode: incoming.mode ?? prev.mode,
+      selectedObjId: incoming.selectedObjId,
+      objStateIdxMap: incoming.objStateIdxMap ?? prev.objStateIdxMap,
+      isHybrid: incoming.isHybrid ?? prev.isHybrid,
     }));
   });
 }
 
-function getSceneData(projectId: number) {
+function getEditorData(projectId: number) {
   supabase
     .from("projects")
-    .select("scene")
+    .select("editor")
     .eq("id", projectId)
     .single()
     .then(({ data, error }) => {
       if (error) {
-        console.error("[supabase:scene] initial fetch error:", error);
+        console.error("[supabase:editor] initial fetch error:", error);
         return;
       }
       if (data) {
-        console.log("[supabase:scene] initial fetch ok, applying scene data");
-        applySceneData(data as ProjectsData);
+        console.log("[supabase:editor] initial fetch ok, applying editor data");
+        applyEditorData(data as ProjectsData);
       }
     });
 }
 
-export function startSceneSync(projectId: number = 1) {
-  console.log("[supabase:scene] starting scene sync for project", projectId);
+export function startEditorSync(projectId: number = 1) {
+  console.log("[supabase:editor] starting editor sync for project", projectId);
 
-  // Kick off the initial fetch in the background to avoid delaying
-  // the synchronous return of the unsubscribe function (prevents
-  // React Strict Mode double-effect races).
-  getSceneData(projectId);
+  // Kick off the initial fetch in the background
+  getEditorData(projectId);
 
   const channel = supabase
-    .channel(`projects:scene:${projectId}`)
+    .channel(`projects:editor:${projectId}`)
     .on(
       "postgres_changes",
       {
@@ -60,23 +60,23 @@ export function startSceneSync(projectId: number = 1) {
       (payload) => {
         if ((payload.new as ProjectsData)?.edited_by_client === clientId)
           return;
-        console.log("[supabase:scene] realtime payload", payload.eventType);
+        console.log("[supabase:editor] realtime payload", payload.eventType);
         const row = (payload.new ?? payload.old ?? {}) as ProjectsData;
-        applySceneData(row);
+        applyEditorData(row);
       },
     )
     .on("system", { event: "status_changed" }, (status) => {
-      console.log("[supabase:scene] channel status:", status);
+      console.log("[supabase:editor] channel status:", status);
     })
     .subscribe();
 
   // Set up store -> database sync with debouncing and loop prevention
-  let lastSnapshotString = stringify(pickSceneFields());
+  let lastSnapshotString = stringify(pickEditorFields());
 
   const postUpdate = async () => {
-    const scene = pickSceneFields();
+    const editor = pickEditorFields();
     const update = {
-      scene,
+      editor,
       edited_by_client: clientId,
       edited_at: new Date().toISOString(),
     };
@@ -87,17 +87,17 @@ export function startSceneSync(projectId: number = 1) {
       .eq("id", projectId);
 
     if (updateError) {
-      console.error("[supabase:scene] update error:", updateError);
+      console.error("[supabase:editor] update error:", updateError);
     } else {
       // Snapshot after successful write
-      lastSnapshotString = stringify(scene);
+      lastSnapshotString = stringify(editor);
     }
   };
 
   const debouncedPostUpdate = debounce(postUpdate, 10, { maxWait: 50 });
 
-  const unsubscribeSceneStore = useSceneStore.subscribe(() => {
-    const next = pickSceneFields();
+  const unsubscribeEditorStore = useEditorStore.subscribe(() => {
+    const next = pickEditorFields();
     const nextString = stringify(next);
     if (getIsApplyingRemoteUpdate()) {
       // Keep snapshot aligned but skip posting
@@ -110,6 +110,6 @@ export function startSceneSync(projectId: number = 1) {
 
   return () => {
     supabase.removeChannel(channel);
-    unsubscribeSceneStore();
+    unsubscribeEditorStore();
   };
 }

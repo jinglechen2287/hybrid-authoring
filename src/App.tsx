@@ -4,6 +4,7 @@ import GUI from "~/gui/GUI";
 import { useEditorStore, xrStore } from "~/stores";
 import { startCameraSync } from "~/supabase/cameraSubscription";
 import { getRoomData } from "~/supabase/roomData";
+import { startEditorSync } from "~/supabase/editorSubscription";
 import { startSceneSync } from "~/supabase/sceneSubscription";
 import "./index.css";
 
@@ -22,6 +23,7 @@ export default function App() {
 
   useEffect(() => {
     const stopScene = startSceneSync(projectId);
+    const stopEditor = startEditorSync(projectId);
     const stopCamera = startCameraSync(projectId);
     const stopXR = xrStore.subscribe((state) => {
       if (state.mode && state.mode.includes("immersive")) {
@@ -33,6 +35,7 @@ export default function App() {
     getRoomData(projectId);
     return () => {
       stopScene?.();
+      stopEditor?.();
       stopCamera?.();
       stopXR?.();
     };

@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { stringify, pickDBFields, clientId } from "../util";
-import { useEditorStore, useSceneStore } from "~/stores";
+import {
+  stringify,
+  pickSceneFields,
+  pickEditorFields,
+  pickCameraFields,
+  clientId,
+} from "../util";
+import { useEditorStore, useSceneStore, cameraStore } from "~/stores";
 
 describe("supabase/util", () => {
   describe("clientId", () => {
@@ -47,13 +53,43 @@ describe("supabase/util", () => {
     });
   });
 
-  describe("pickDBFields", () => {
+  describe("pickSceneFields", () => {
     beforeEach(() => {
-      // Reset stores to known state
       useSceneStore.setState({
         lightPosition: [1, 2, 3],
         content: { obj1: { type: "sphere", name: "Object 1", states: [] } },
       });
+    });
+
+    it("extracts correct fields from scene store", () => {
+      const fields = pickSceneFields();
+
+      expect(fields).toEqual({
+        lightPosition: [1, 2, 3],
+        content: { obj1: { type: "sphere", name: "Object 1", states: [] } },
+      });
+    });
+
+    it("reflects current scene store state", () => {
+      useSceneStore.setState({ lightPosition: [4, 5, 6] });
+
+      const fields = pickSceneFields();
+
+      expect(fields.lightPosition).toEqual([4, 5, 6]);
+    });
+
+    it("includes all required scene fields", () => {
+      const fields = pickSceneFields();
+      const requiredKeys = ["lightPosition", "content"];
+
+      for (const key of requiredKeys) {
+        expect(fields).toHaveProperty(key);
+      }
+    });
+  });
+
+  describe("pickEditorFields", () => {
+    beforeEach(() => {
       useEditorStore.setState({
         mode: "edit",
         selectedObjId: "obj1",
@@ -62,12 +98,10 @@ describe("supabase/util", () => {
       });
     });
 
-    it("extracts correct fields from stores", () => {
-      const fields = pickDBFields();
+    it("extracts correct fields from editor store", () => {
+      const fields = pickEditorFields();
 
       expect(fields).toEqual({
-        lightPosition: [1, 2, 3],
-        content: { obj1: { type: "sphere", name: "Object 1", states: [] } },
         mode: "edit",
         selectedObjId: "obj1",
         objStateIdxMap: { obj1: 2 },
@@ -75,26 +109,58 @@ describe("supabase/util", () => {
       });
     });
 
-    it("reflects current store state", () => {
-      // Update store
+    it("reflects current editor store state", () => {
       useEditorStore.setState({ mode: "play", selectedObjId: "obj2" });
 
-      const fields = pickDBFields();
+      const fields = pickEditorFields();
 
       expect(fields.mode).toBe("play");
       expect(fields.selectedObjId).toBe("obj2");
     });
 
-    it("includes all required DB fields", () => {
-      const fields = pickDBFields();
-      const requiredKeys = [
-        "lightPosition",
-        "content",
-        "mode",
-        "selectedObjId",
-        "objStateIdxMap",
-        "isHybrid",
-      ];
+    it("includes all required editor fields", () => {
+      const fields = pickEditorFields();
+      const requiredKeys = ["mode", "selectedObjId", "objStateIdxMap", "isHybrid"];
+
+      for (const key of requiredKeys) {
+        expect(fields).toHaveProperty(key);
+      }
+    });
+  });
+
+  describe("pickCameraFields", () => {
+    beforeEach(() => {
+      cameraStore.setState({
+        distance: 5,
+        yaw: Math.PI / 2,
+        pitch: -Math.PI / 4,
+        origin: [1, 2, 3],
+      });
+    });
+
+    it("extracts correct fields from camera store", () => {
+      const fields = pickCameraFields();
+
+      expect(fields).toEqual({
+        distance: 5,
+        yaw: Math.PI / 2,
+        pitch: -Math.PI / 4,
+        origin: [1, 2, 3],
+      });
+    });
+
+    it("reflects current camera store state", () => {
+      cameraStore.setState({ distance: 10, yaw: Math.PI });
+
+      const fields = pickCameraFields();
+
+      expect(fields.distance).toBe(10);
+      expect(fields.yaw).toBe(Math.PI);
+    });
+
+    it("includes all required camera fields", () => {
+      const fields = pickCameraFields();
+      const requiredKeys = ["distance", "yaw", "pitch", "origin"];
 
       for (const key of requiredKeys) {
         expect(fields).toHaveProperty(key);
