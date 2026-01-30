@@ -11,9 +11,9 @@ import {
 } from "@react-three/xr";
 import { useEffect, useMemo, useRef } from "react";
 import { BackSide, Matrix4, Quaternion, Vector3 } from "three";
+import { usePushRoom } from "~/convex";
 import { cameraStore, xrStore } from "~/stores";
 import { useRoomStore } from "~/stores/roomStore";
-import { patchRoomData } from "~/supabase/roomData";
 import type { RoomPlaneData } from "~/types";
 import Scene from "./scene/Scene";
 import SceneContent from "./scene/SceneContent";
@@ -61,6 +61,7 @@ function Room() {
   const needsUpdate = useRef(false);
   const gl = useThree((s) => s.gl);
   const { setPlanes, planes } = useRoomStore();
+  const pushRoom = usePushRoom();
 
   const contentMatrix = useMemo(() => {
     const floor = planes.find((p) => p.semanticLabel === "floor");
@@ -127,7 +128,7 @@ function Room() {
 
     if (newRoomData.length > 0) {
       setPlanes(newRoomData);
-      patchRoomData();
+      pushRoom();
     }
     needsUpdate.current = false;
   });

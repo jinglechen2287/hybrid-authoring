@@ -2,15 +2,10 @@ import { useEffect, memo } from "react";
 import Canvas from "~/canvas/Canvas";
 import GUI from "~/gui/GUI";
 import { useEditorStore, xrStore } from "~/stores";
-import { startCameraSync } from "~/supabase/cameraSubscription";
-import { getRoomData } from "~/supabase/roomData";
-import { startEditorSync } from "~/supabase/editorSubscription";
-import { startSceneSync } from "~/supabase/sceneSubscription";
+import { ConvexClientProvider, ProjectSyncProvider } from "~/convex";
 import "./index.css";
 
-const projectId = 1;
-
-export default function App() {
+function AppContent() {
   const isHybrid = useEditorStore((s) => s.isHybrid);
 
   useEffect(() => {
@@ -22,9 +17,6 @@ export default function App() {
   }, [isHybrid]);
 
   useEffect(() => {
-    const stopScene = startSceneSync(projectId);
-    const stopEditor = startEditorSync(projectId);
-    const stopCamera = startCameraSync(projectId);
     const stopXR = xrStore.subscribe((state) => {
       if (state.mode && state.mode.includes("immersive")) {
         useEditorStore.setState({ isHybrid: true });
@@ -32,11 +24,7 @@ export default function App() {
         useEditorStore.setState({ isHybrid: false });
       }
     });
-    getRoomData(projectId);
     return () => {
-      stopScene?.();
-      stopEditor?.();
-      stopCamera?.();
       stopXR?.();
     };
   }, []);
@@ -50,6 +38,16 @@ export default function App() {
         <Canvas />
       </section>
     </main>
+  );
+}
+
+export default function App() {
+  return (
+    <ConvexClientProvider>
+      <ProjectSyncProvider>
+        <AppContent />
+      </ProjectSyncProvider>
+    </ConvexClientProvider>
   );
 }
 
