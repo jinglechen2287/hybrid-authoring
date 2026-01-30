@@ -1,17 +1,20 @@
 import { useQuery, useMutation } from "convex/react";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useMemo, useCallback } from "react";
+import debounce from "lodash.debounce";
 import { api } from "../../convex/_generated/api";
 import { useSceneStore } from "~/stores/sceneStore";
 import { useEditorStore } from "~/stores/editorStore";
 import { cameraStore } from "~/stores/cameraStore";
 import { useRoomStore } from "~/stores/roomStore";
 import { PROJECT_ID } from "./projectId";
+import { DEBOUNCE_TIMING } from "~/constants";
 import type { SceneObj, ObjState, Transform, TriggerType } from "~/types";
 
-// Debounce timeout refs
-type DebouncedFn = {
-  timeoutId: ReturnType<typeof setTimeout> | null;
-};
+// Tolerance for floating point comparison to prevent sync loops
+const EPSILON = 1e-9;
+const nearEqual = (a: number, b: number) => Math.abs(a - b) < EPSILON;
+const arraysNearEqual = (a: number[], b: number[]) =>
+  a.length === b.length && a.every((v, i) => nearEqual(v, b[i]));
 
 // Type-safe conversion for scene content from Convex
 type ConvexSceneObj = {
@@ -49,8 +52,11 @@ function convertConvexToSceneObj(obj: ConvexSceneObj): SceneObj {
 }
 
 export function useProjectSync() {
-  // Ref counter to prevent sync loops (handles concurrent updates)
-  const applyingRemoteCount = useRef(0);
+  // Track last applied remote data to prevent sync loops
+  // More robust than counter + queueMicrotask which can be racy
+  const lastRemoteScene = useRef<typeof sceneData>(null);
+  const lastRemoteEditor = useRef<typeof editorData>(null);
+  const lastRemoteCamera = useRef<typeof cameraData>(null);
 
   // Convex queries - auto-realtime
   const sceneData = useQuery(api.projects.getScene, { projectId: PROJECT_ID });
@@ -69,7 +75,7 @@ export function useProjectSync() {
   // Apply scene data from Convex
   useEffect(() => {
     if (!sceneData) return;
-    applyingRemoteCount.current++;
+    lastRemoteScene.current = sceneData;
     useSceneStore.setState({
       lightPosition: sceneData.lightPosition as [number, number, number],
       content: Object.fromEntries(
@@ -79,39 +85,29 @@ export function useProjectSync() {
         ])
       ),
     });
-    // Use microtask to ensure the counter is decremented after store update propagates
-    queueMicrotask(() => {
-      applyingRemoteCount.current--;
-    });
   }, [sceneData]);
 
   // Apply editor data from Convex
   useEffect(() => {
     if (!editorData) return;
-    applyingRemoteCount.current++;
+    lastRemoteEditor.current = editorData;
     useEditorStore.setState({
       mode: editorData.mode,
       selectedObjId: editorData.selectedObjId,
       objStateIdxMap: editorData.objStateIdxMap,
       isHybrid: editorData.isHybrid,
     });
-    queueMicrotask(() => {
-      applyingRemoteCount.current--;
-    });
   }, [editorData]);
 
   // Apply camera data from Convex
   useEffect(() => {
     if (!cameraData) return;
-    applyingRemoteCount.current++;
+    lastRemoteCamera.current = cameraData;
     cameraStore.setState({
       distance: cameraData.distance,
       yaw: cameraData.yaw,
       pitch: cameraData.pitch,
       origin: cameraData.origin as [number, number, number],
-    });
-    queueMicrotask(() => {
-      applyingRemoteCount.current--;
     });
   }, [cameraData]);
 
@@ -128,122 +124,162 @@ export function useProjectSync() {
 
   // ============ Local -> Remote Sync ============
 
-  // Debounce refs
-  const sceneDebounce = useRef<DebouncedFn>({ timeoutId: null });
-  const editorDebounce = useRef<DebouncedFn>({ timeoutId: null });
-  const cameraDebounce = useRef<DebouncedFn>({ timeoutId: null });
-
-  const pushScene = useCallback(() => {
-    if (sceneDebounce.current.timeoutId) {
-      clearTimeout(sceneDebounce.current.timeoutId);
-    }
-    sceneDebounce.current.timeoutId = setTimeout(() => {
-      if (applyingRemoteCount.current > 0) return;
-      const state = useSceneStore.getState();
-      mutateScene({
-        projectId: PROJECT_ID,
-        lightPosition: [...state.lightPosition],
-        content: Object.fromEntries(
-          Object.entries(state.content).map(([id, obj]) => [
+  // Helper to check if scene state matches last remote
+  const isSceneUnchangedFromRemote = () => {
+    const remote = lastRemoteScene.current;
+    if (!remote) return false;
+    const local = useSceneStore.getState();
+    return JSON.stringify(local.lightPosition) === JSON.stringify(remote.lightPosition) &&
+      JSON.stringify(local.content) === JSON.stringify(
+        Object.fromEntries(
+          Object.entries(remote.content).map(([id, obj]) => [
             id,
-            {
-              type: obj.type,
-              name: obj.name,
-              states: obj.states.map((s) => ({
-                id: s.id,
-                transform: {
-                  position: [
-                    s.transform.position[0],
-                    s.transform.position[1],
-                    s.transform.position[2],
-                  ],
-                  // Only take x, y, z - exclude Euler order string
-                  rotation: [
-                    s.transform.rotation[0],
-                    s.transform.rotation[1],
-                    s.transform.rotation[2],
-                  ],
-                  scale: [
-                    s.transform.scale[0],
-                    s.transform.scale[1],
-                    s.transform.scale[2],
-                  ],
-                },
-                trigger: s.trigger,
-                transitionTo: s.transitionTo,
-              })),
-            },
+            convertConvexToSceneObj(obj as ConvexSceneObj),
           ])
-        ),
-      });
-    }, 50);
-  }, [mutateScene]);
+        )
+      );
+  };
 
-  const pushEditor = useCallback(() => {
-    if (editorDebounce.current.timeoutId) {
-      clearTimeout(editorDebounce.current.timeoutId);
-    }
-    editorDebounce.current.timeoutId = setTimeout(() => {
-      if (applyingRemoteCount.current > 0) return;
-      const state = useEditorStore.getState();
-      mutateEditor({
-        projectId: PROJECT_ID,
-        mode: state.mode,
-        selectedObjId: state.selectedObjId,
-        objStateIdxMap: state.objStateIdxMap,
-        isHybrid: state.isHybrid,
-      });
-    }, 50);
-  }, [mutateEditor]);
+  // Debounced push functions
+  const pushScene = useMemo(
+    () =>
+      debounce(
+        () => {
+          if (isSceneUnchangedFromRemote()) return;
+          const state = useSceneStore.getState();
+          mutateScene({
+            projectId: PROJECT_ID,
+            lightPosition: [...state.lightPosition],
+            content: Object.fromEntries(
+              Object.entries(state.content).map(([id, obj]) => [
+                id,
+                {
+                  type: obj.type,
+                  name: obj.name,
+                  states: obj.states.map((s) => ({
+                    id: s.id,
+                    transform: {
+                      position: [
+                        s.transform.position[0],
+                        s.transform.position[1],
+                        s.transform.position[2],
+                      ],
+                      // Only take x, y, z - exclude Euler order string
+                      rotation: [
+                        s.transform.rotation[0],
+                        s.transform.rotation[1],
+                        s.transform.rotation[2],
+                      ],
+                      scale: [
+                        s.transform.scale[0],
+                        s.transform.scale[1],
+                        s.transform.scale[2],
+                      ],
+                    },
+                    trigger: s.trigger,
+                    transitionTo: s.transitionTo,
+                  })),
+                },
+              ])
+            ),
+          }).catch((err) => {
+            console.error("Failed to sync scene:", err);
+          });
+        },
+        DEBOUNCE_TIMING.DEBOUNCE_MS,
+        { maxWait: DEBOUNCE_TIMING.MAX_WAIT_MS }
+      ),
+    [mutateScene]
+  );
 
-  const pushCamera = useCallback(() => {
-    if (cameraDebounce.current.timeoutId) {
-      clearTimeout(cameraDebounce.current.timeoutId);
-    }
-    cameraDebounce.current.timeoutId = setTimeout(() => {
-      if (applyingRemoteCount.current > 0) return;
-      const state = cameraStore.getState();
-      mutateCamera({
-        projectId: PROJECT_ID,
-        distance: state.distance,
-        yaw: state.yaw,
-        pitch: state.pitch,
-        origin: [...state.origin],
-      });
-    }, 50);
-  }, [mutateCamera]);
+  // Helper to check if editor state matches last remote
+  const isEditorUnchangedFromRemote = () => {
+    const remote = lastRemoteEditor.current;
+    if (!remote) return false;
+    const local = useEditorStore.getState();
+    return local.mode === remote.mode &&
+      local.selectedObjId === remote.selectedObjId &&
+      JSON.stringify(local.objStateIdxMap) === JSON.stringify(remote.objStateIdxMap) &&
+      local.isHybrid === remote.isHybrid;
+  };
+
+  const pushEditor = useMemo(
+    () =>
+      debounce(
+        () => {
+          if (isEditorUnchangedFromRemote()) return;
+          const state = useEditorStore.getState();
+          mutateEditor({
+            projectId: PROJECT_ID,
+            mode: state.mode,
+            selectedObjId: state.selectedObjId,
+            objStateIdxMap: state.objStateIdxMap,
+            isHybrid: state.isHybrid,
+          }).catch((err) => {
+            console.error("Failed to sync editor:", err);
+          });
+        },
+        DEBOUNCE_TIMING.DEBOUNCE_MS,
+        { maxWait: DEBOUNCE_TIMING.MAX_WAIT_MS }
+      ),
+    [mutateEditor]
+  );
+
+  // Helper to check if camera state matches last remote
+  const isCameraUnchangedFromRemote = () => {
+    const remote = lastRemoteCamera.current;
+    if (!remote) return false;
+    const local = cameraStore.getState();
+    return (
+      nearEqual(local.distance, remote.distance) &&
+      nearEqual(local.yaw, remote.yaw) &&
+      nearEqual(local.pitch, remote.pitch) &&
+      arraysNearEqual([...local.origin], remote.origin as number[])
+    );
+  };
+
+  const pushCamera = useMemo(
+    () =>
+      debounce(
+        () => {
+          if (isCameraUnchangedFromRemote()) return;
+          const state = cameraStore.getState();
+          mutateCamera({
+            projectId: PROJECT_ID,
+            distance: state.distance,
+            yaw: state.yaw,
+            pitch: state.pitch,
+            origin: [...state.origin],
+          }).catch((err) => {
+            console.error("Failed to sync camera:", err);
+          });
+        },
+        DEBOUNCE_TIMING.CAMERA_DEBOUNCE_MS,
+        { maxWait: DEBOUNCE_TIMING.CAMERA_MAX_WAIT_MS }
+      ),
+    [mutateCamera]
+  );
 
   // Subscribe to store changes and push to Convex
   useEffect(() => {
-    // Capture refs for cleanup
-    const sceneDebounceRef = sceneDebounce.current;
-    const editorDebounceRef = editorDebounce.current;
-    const cameraDebounceRef = cameraDebounce.current;
-
     const unsubScene = useSceneStore.subscribe(() => {
-      if (applyingRemoteCount.current === 0) pushScene();
+      pushScene();
     });
     const unsubEditor = useEditorStore.subscribe(() => {
-      if (applyingRemoteCount.current === 0) pushEditor();
+      pushEditor();
     });
     const unsubCamera = cameraStore.subscribe(() => {
-      if (applyingRemoteCount.current === 0) pushCamera();
+      pushCamera();
     });
 
     return () => {
       unsubScene();
       unsubEditor();
       unsubCamera();
-      // Clear any pending debounced mutations
-      if (sceneDebounceRef.timeoutId) {
-        clearTimeout(sceneDebounceRef.timeoutId);
-      }
-      if (editorDebounceRef.timeoutId) {
-        clearTimeout(editorDebounceRef.timeoutId);
-      }
-      if (cameraDebounceRef.timeoutId) {
-        clearTimeout(cameraDebounceRef.timeoutId);
-      }
+      // Cancel any pending debounced mutations
+      pushScene.cancel();
+      pushEditor.cancel();
+      pushCamera.cancel();
     };
   }, [pushScene, pushEditor, pushCamera]);
 
@@ -259,6 +295,8 @@ export function useProjectSync() {
         poseMatrix: p.poseMatrix,
         polygon: p.polygon,
       })),
+    }).catch((err) => {
+      console.error("Failed to sync room:", err);
     });
   }, [mutateRoom]);
 

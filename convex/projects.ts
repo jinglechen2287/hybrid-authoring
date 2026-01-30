@@ -104,6 +104,8 @@ export const updateScene = mutation({
     content: v.record(v.string(), sceneObjValidator),
   },
   handler: async (ctx, { projectId, lightPosition, content }) => {
+    const project = await ctx.db.get(projectId);
+    if (!project) return null;
     await ctx.db.patch(projectId, { lightPosition, content });
   },
 });
@@ -120,6 +122,8 @@ export const updateEditor = mutation({
     ctx,
     { projectId, mode, selectedObjId, objStateIdxMap, isHybrid }
   ) => {
+    const project = await ctx.db.get(projectId);
+    if (!project) return null;
     await ctx.db.patch(projectId, {
       mode,
       selectedObjId,
@@ -138,6 +142,8 @@ export const updateCamera = mutation({
     origin: v.array(v.number()),
   },
   handler: async (ctx, { projectId, distance, yaw, pitch, origin }) => {
+    const project = await ctx.db.get(projectId);
+    if (!project) return null;
     await ctx.db.patch(projectId, {
       cameraDistance: distance,
       cameraYaw: yaw,
@@ -153,6 +159,8 @@ export const updateRoom = mutation({
     room: v.array(roomPlaneDataValidator),
   },
   handler: async (ctx, { projectId, room }) => {
+    const project = await ctx.db.get(projectId);
+    if (!project) return null;
     await ctx.db.patch(projectId, { room });
   },
 });

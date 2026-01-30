@@ -81,14 +81,16 @@ export function getTransitionColor(trigger: TriggerType): string {
 // ANIMATION TIMING
 // ============================================================================
 
-/** Animation and timing constants */
-export const ANIMATION = {
-  /** Debounce delay in milliseconds for Supabase updates */
+/** Debounce timing constants */
+export const DEBOUNCE_TIMING = {
+  /** Debounce delay in milliseconds for Convex updates (scene/editor) */
   DEBOUNCE_MS: 10,
-  /** Maximum wait time in milliseconds for debounced updates */
+  /** Maximum wait time in milliseconds for debounced updates (scene/editor) */
   MAX_WAIT_MS: 50,
-  /** Lerp duration in milliseconds for transform animations */
-  LERP_MS: 1000,
+  /** Debounce delay in milliseconds for camera sync (shorter for responsiveness) */
+  CAMERA_DEBOUNCE_MS: 100,
+  /** Maximum wait time for camera sync during continuous manipulation */
+  CAMERA_MAX_WAIT_MS: 200,
 } as const;
 
 // ============================================================================

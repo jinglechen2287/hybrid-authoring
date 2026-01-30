@@ -4,12 +4,13 @@ import { useSceneStore } from "~/stores/sceneStore";
 import { useEditorStore } from "~/stores/editorStore";
 import { useRoomStore } from "~/stores/roomStore";
 import type { CoreEditorData, CameraData, RoomPlaneData } from "~/types";
+import { DEBOUNCE_TIMING } from "~/constants";
 
-// Mock convex hooks
-const mockMutateScene = vi.fn();
-const mockMutateEditor = vi.fn();
-const mockMutateCamera = vi.fn();
-const mockMutateRoom = vi.fn();
+// Mock convex hooks - return resolved promises by default
+const mockMutateScene = vi.fn().mockResolvedValue(undefined);
+const mockMutateEditor = vi.fn().mockResolvedValue(undefined);
+const mockMutateCamera = vi.fn().mockResolvedValue(undefined);
+const mockMutateRoom = vi.fn().mockResolvedValue(undefined);
 
 let mockSceneData: { lightPosition: number[]; content: Record<string, unknown> } | undefined;
 let mockEditorData: CoreEditorData | undefined;
@@ -57,12 +58,37 @@ vi.mock("../projectId", () => ({
   PROJECT_ID: "test-project-id",
 }));
 
+// Track debounce calls for testing
+const mockDebouncedFns: Array<{
+  fn: (...args: unknown[]) => unknown;
+  options: { maxWait?: number };
+  cancel: ReturnType<typeof vi.fn>;
+}> = [];
+
+vi.mock("lodash.debounce", () => ({
+  default: vi.fn(
+    (
+      fn: (...args: unknown[]) => unknown,
+      _wait: number,
+      options?: { maxWait?: number }
+    ) => {
+      const cancel = vi.fn();
+      mockDebouncedFns.push({ fn, options: options ?? {}, cancel });
+      const debounced = (...args: unknown[]) => fn(...args);
+      debounced.cancel = cancel;
+      return debounced;
+    }
+  ),
+}));
+
 // Re-import after mocking
 import { useProjectSync } from "../hooks";
+import debounce from "lodash.debounce";
 
 describe("useProjectSync", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockDebouncedFns.length = 0;
     mockSceneData = undefined;
     mockEditorData = undefined;
     mockCameraData = undefined;
@@ -80,6 +106,31 @@ describe("useProjectSync", () => {
       isHybrid: false,
     });
     useRoomStore.setState({ planes: [] });
+  });
+
+  describe("debounce configuration", () => {
+    it("creates debounced functions with correct wait and maxWait", () => {
+      renderHook(() => useProjectSync());
+
+      // Should create 3 debounced functions (scene, editor, camera)
+      expect(debounce).toHaveBeenCalledTimes(3);
+      expect(debounce).toHaveBeenCalledWith(
+        expect.any(Function),
+        DEBOUNCE_TIMING.DEBOUNCE_MS,
+        { maxWait: DEBOUNCE_TIMING.MAX_WAIT_MS }
+      );
+    });
+
+    it("cancels debounced functions on unmount", () => {
+      const { unmount } = renderHook(() => useProjectSync());
+
+      unmount();
+
+      // All 3 cancel functions should be called
+      mockDebouncedFns.forEach(({ cancel }) => {
+        expect(cancel).toHaveBeenCalled();
+      });
+    });
   });
 
   describe("remote -> local sync", () => {
@@ -190,6 +241,76 @@ describe("useProjectSync", () => {
       // Wait a bit to ensure no spurious mutations
       await new Promise((r) => setTimeout(r, 100));
       expect(mockMutateScene).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("error handling", () => {
+    it("logs error when scene mutation fails", async () => {
+      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+      mockMutateScene.mockRejectedValueOnce(new Error("Network error"));
+
+      mockSceneData = {
+        lightPosition: [0, 0, 0],
+        content: {},
+      };
+
+      renderHook(() => useProjectSync());
+
+      await waitFor(() => {
+        expect(useSceneStore.getState().lightPosition).toEqual([0, 0, 0]);
+      });
+
+      // Modify store locally to trigger push
+      act(() => {
+        useSceneStore.setState({ lightPosition: [5, 5, 5] });
+      });
+
+      await waitFor(
+        () => {
+          expect(consoleError).toHaveBeenCalledWith(
+            "Failed to sync scene:",
+            expect.any(Error)
+          );
+        },
+        { timeout: 200 }
+      );
+
+      consoleError.mockRestore();
+    });
+
+    it("logs error when editor mutation fails", async () => {
+      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+      mockMutateEditor.mockRejectedValueOnce(new Error("Network error"));
+
+      mockEditorData = {
+        mode: "edit",
+        selectedObjId: undefined,
+        objStateIdxMap: {},
+        isHybrid: false,
+      };
+
+      renderHook(() => useProjectSync());
+
+      await waitFor(() => {
+        expect(useEditorStore.getState().mode).toBe("edit");
+      });
+
+      // Modify store locally to trigger push
+      act(() => {
+        useEditorStore.setState({ mode: "play" });
+      });
+
+      await waitFor(
+        () => {
+          expect(consoleError).toHaveBeenCalledWith(
+            "Failed to sync editor:",
+            expect.any(Error)
+          );
+        },
+        { timeout: 200 }
+      );
+
+      consoleError.mockRestore();
     });
   });
 });

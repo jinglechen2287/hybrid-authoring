@@ -22,7 +22,7 @@ npm run test:run  # Vitest single run
 - **UI**: React 19 with React Compiler, Tailwind CSS 4
 - **3D**: Three.js 0.180, React Three Fiber, @react-three/drei, @react-three/handle, @react-three/xr
 - **State**: Zustand 5 with Immer for immutable updates
-- **Backend**: Supabase with realtime subscriptions
+- **Backend**: Convex with realtime queries
 
 ## Architecture
 
@@ -51,14 +51,14 @@ TriggerType = "click" | "hoverStart" | "hoverEnd" | "auto" | ""
 - **scene/SceneContent.tsx**: Objects rendering with transforms and state visualization
 - **interaction/CustomTransformHandles.tsx**: Central hub for edit/play mode logic, transform handles, state transitions with lerp interpolation
 
-### Supabase Sync (src/supabase/)
+### Convex Sync (src/convex/)
 
-Pattern used by sceneSubscription, editorSubscription, cameraSubscription:
+Pattern in `useProjectSync` hook:
 
-1. Initial fetch loads DB state
-2. Realtime channel listens for postgres_changes
-3. Store subscriptions debounce updates back to DB
-4. Loop prevention via `clientId` matching and `isApplyingRemoteUpdate` flag
+1. `useQuery` hooks auto-subscribe to realtime updates from Convex
+2. Remote data applied to Zustand stores via `useEffect`
+3. Store subscriptions debounce local changes back via `useMutation`
+4. Loop prevention via `applyingRemoteCount` ref counter
 
 ### GUI (src/gui/)
 
@@ -76,9 +76,10 @@ Left sidebar with sections: SelectionSection, StatesSection, TransformSection, B
 
 Create `.env.local`:
 
-``` js
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
+```text
+CONVEX_DEPLOYMENT=your-deployment-name
+VITE_CONVEX_URL=https://your-project.convex.cloud
+VITE_CONVEX_PROJECT_ID=your-project-document-id
 ```
 
 ## Testing
