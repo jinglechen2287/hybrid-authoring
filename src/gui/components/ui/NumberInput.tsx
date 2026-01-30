@@ -7,6 +7,14 @@ import { useEditorStore, useSceneStore } from "~/stores";
 import type { SceneData } from "~/types";
 import { degToRad, radToDeg } from "~/utils/angleConversion";
 
+/**
+ * Render a numeric input for a single "X"|"Y"|"Z" component of the current vec3 transform.
+ *
+ * Displays rotation values in degrees (rounded) while storing them in radians; user-entered degrees are converted back to radians before updating the scene. Non-rotation types show and store their raw numeric values. Formatting and step size adapt to whether the current transform type is rotation.
+ *
+ * @param coordinate - Axis label to edit: "X", "Y", or "Z"
+ * @returns The NumberInput React element for the specified axis, or `null` when no object, state, or value is available
+ */
 export default function NumberInput({
   coordinate,
 }: {
