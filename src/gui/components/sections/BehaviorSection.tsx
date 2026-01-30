@@ -4,6 +4,7 @@ import { useEditorStore, useSceneStore } from "~/stores";
 import type { SceneData, TriggerType } from "~/types";
 import Section from "../layouts/Section";
 import Select from "../ui/Select";
+import { getObjStateIdx } from "~/utils/stateOperations";
 
 export default function BehaviorSection() {
   const selectedObjId = useEditorStore((s) => s.selectedObjId);
@@ -11,9 +12,7 @@ export default function BehaviorSection() {
   const objStates = useSceneStore((s) =>
     selectedObjId ? s.content[selectedObjId]?.states ?? [] : [],
   );
-  const selectedObjStateIdx = selectedObjId
-    ? (objStateIdxMap[selectedObjId] ?? 0)
-    : 0;
+  const selectedObjStateIdx = getObjStateIdx(objStateIdxMap, selectedObjId);
   const current = objStates[selectedObjStateIdx];
 
   const triggerItems = useMemo(
