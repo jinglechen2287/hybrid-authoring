@@ -58,7 +58,7 @@ describe("supabase/util", () => {
         mode: "edit",
         selectedObjId: "obj1",
         objStateIdxMap: { obj1: 2 },
-        isXRConnected: false,
+        isHybrid: false,
       });
     });
 
@@ -71,7 +71,7 @@ describe("supabase/util", () => {
         mode: "edit",
         selectedObjId: "obj1",
         objStateIdxMap: { obj1: 2 },
-        isXRConnected: false,
+        isHybrid: false,
       });
     });
 
@@ -93,7 +93,7 @@ describe("supabase/util", () => {
         "mode",
         "selectedObjId",
         "objStateIdxMap",
-        "isXRConnected",
+        "isHybrid",
       ];
 
       for (const key of requiredKeys) {

@@ -10,24 +10,24 @@ import "./index.css";
 const projectId = 1;
 
 export default function App() {
-  const isXRConnected = useEditorStore((s) => s.isXRConnected);
+  const isHybrid = useEditorStore((s) => s.isHybrid);
 
   useEffect(() => {
-    if (isXRConnected) {
+    if (isHybrid) {
       document.documentElement.style.fontSize = "150%";
     } else {
       document.documentElement.style.fontSize = "";
     }
-  }, [isXRConnected]);
+  }, [isHybrid]);
 
   useEffect(() => {
     const stopScene = startSceneSync(projectId);
     const stopCamera = startCameraSync(projectId);
     const stopXR = xrStore.subscribe((state) => {
       if (state.mode && state.mode.includes("immersive")) {
-        useEditorStore.setState({ isXRConnected: true });
+        useEditorStore.setState({ isHybrid: true });
       } else {
-        useEditorStore.setState({ isXRConnected: false });
+        useEditorStore.setState({ isHybrid: false });
       }
     });
     getRoomData(projectId);

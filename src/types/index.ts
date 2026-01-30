@@ -38,7 +38,7 @@ export type CoreEditorData = {
   mode: EditorMode;
   selectedObjId: string | undefined;
   objStateIdxMap: Record<string, number>;
-  isXRConnected: boolean;
+  isHybrid: boolean;
 };
 
 export type EditorStore = CoreEditorData & {

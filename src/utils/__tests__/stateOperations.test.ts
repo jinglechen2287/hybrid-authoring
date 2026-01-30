@@ -158,7 +158,7 @@ describe("stateOperations", () => {
 
       const newIdx = addObjState(testObjId, 0);
 
-      expect(newIdx).toBe(1); // Returns currentStateIdx + 1
+      expect(newIdx).toBe(0); // Returns currentStateIdx unchanged since no state was added
       const states = useSceneStore.getState().content[testObjId]?.states;
       expect(states).toHaveLength(0); // No state was added
     });

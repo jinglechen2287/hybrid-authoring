@@ -21,7 +21,7 @@ beforeEach(() => {
     mode: 'edit',
     selectedObjId: undefined,
     objStateIdxMap: {},
-    isXRConnected: false,
+    isHybrid: false,
     isConnecting: false,
     connectingTrigger: 'click',
     connectingFromObjId: undefined,

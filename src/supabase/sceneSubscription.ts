@@ -41,7 +41,7 @@ function setScene(row: ProjectsData) {
         mode: editor.mode ?? prev.mode,
         selectedObjId: editor.selectedObjId,
         objStateIdxMap: editor.objStateIdxMap ?? prev.objStateIdxMap,
-        isXRConnected: editor.isXRConnected ?? prev.isXRConnected,
+        isHybrid: editor.isHybrid ?? prev.isHybrid,
       }));
     }
   } finally {
@@ -114,7 +114,7 @@ export function startSceneSync(projectId: number = 1) {
       mode: current.mode,
       selectedObjId: current.selectedObjId,
       objStateIdxMap: current.objStateIdxMap,
-      isXRConnected: current.isXRConnected,
+      isHybrid: current.isHybrid,
     };
     const update = {
       scene,

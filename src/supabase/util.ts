@@ -8,11 +8,10 @@ export function pickDBFields() {
   return {
     lightPosition: scene.lightPosition,
     content: scene.content,
-
     mode: editor.mode,
     selectedObjId: editor.selectedObjId,
     objStateIdxMap: editor.objStateIdxMap,
-    isXRConnected: editor.isXRConnected,
+    isHybrid: editor.isHybrid,
   };
 }
 

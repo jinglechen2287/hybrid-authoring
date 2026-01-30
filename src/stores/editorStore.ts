@@ -8,6 +8,7 @@ export const useEditorStore = create<EditorStore>((set) => ({
       const nextMode = state.mode === "edit" ? "play" : "edit";
       let nextObjStateIdxMap = state.objStateIdxMap;
       if (nextMode === "play") {
+        // Reset objStateIdxMap to 0 for all objects in play mode
         const keys = Object.keys(state.objStateIdxMap);
         if (keys.length === 0) {
           nextObjStateIdxMap = state.selectedObjId
@@ -61,7 +62,7 @@ export const useEditorStore = create<EditorStore>((set) => ({
         },
       };
     }),
-  isXRConnected: false,
+  isHybrid: false,
   isConnecting: false,
   connectingTrigger: "click",
   setConnectingFrom: (objId, stateId) =>
