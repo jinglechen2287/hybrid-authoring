@@ -5,6 +5,7 @@ import { useCallback } from "react";
 import { useVec3Input } from "~/gui/contexts/Vec3InputContext";
 import { useEditorStore, useSceneStore } from "~/stores";
 import type { SceneData } from "~/types";
+import { degToRad, radToDeg } from "~/utils/angleConversion";
 
 export default function NumberInput({
   coordinate,
@@ -21,7 +22,9 @@ export default function NumberInput({
   const objStates = obj?.states ?? [];
   const objStateIdx = selectedObjId ? (objStateIdxMap[selectedObjId] ?? 0) : 0;
   const objState = objStates[objStateIdx] ?? objStates[0];
-  const value = objState?.transform[type][index];
+  const rawValue = objState?.transform[type][index];
+  const isRotation = type === "rotation";
+  const value = rawValue !== undefined && isRotation ? Math.round(radToDeg(rawValue)) : rawValue;
 
   const valueChangeHandler = useCallback(
     (details: ValueChangeDetails) => {
@@ -30,6 +33,7 @@ export default function NumberInput({
         produce((sceneData: SceneData) => {
           let value = parseFloat(details.value);
           if (isNaN(value)) value = 0;
+          if (isRotation) value = degToRad(value);
           const target = sceneData.content[selectedObjId];
           if (!target) return;
           const objStates = target.states;
@@ -39,7 +43,7 @@ export default function NumberInput({
         }),
       );
     },
-    [selectedObjId, objStateIdx, type, index],
+    [selectedObjId, objStateIdx, type, index, isRotation],
   );
 
   if (!selectedObjId || !obj || !objState || value === undefined) return null;
@@ -48,9 +52,9 @@ export default function NumberInput({
     <ArkNumberInput.Root
       value={value.toString()}
       formatOptions={{
-        maximumFractionDigits: 2,
+        maximumFractionDigits: isRotation ? 0 : 2,
       }}
-      step={0.01}
+      step={isRotation ? 1 : 0.01}
       className="min-w-20"
       onValueChange={valueChangeHandler}
     >
